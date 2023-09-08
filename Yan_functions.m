@@ -12,23 +12,25 @@ YanFun.total_Gaussian_bound=@total_Gaussian_bound;
 YanFun.Principal_Gaussian_bound=@Principal_Gaussian_bound;
 YanFun.two_piece_pdf=@two_piece_pdf;
 YanFun.stable_bound=@stable_bound;
-YanFun.distConv_fft=@distConv_fft;
-YanFun.distConv_fft_org=@distConv_fft_org;
-YanFun.distConv=@distConv;
-YanFun.selfConv_fft=@selfConv_fft;
-YanFun.selfConv=@selfConv;
+YanFun.distConv_org=@distConv_org;
+YanFun.distSelfConv=@distSelfConv;
+YanFun.get_conv=@get_conv;
 YanFun.compareConvOverbound=@compareConvOverbound;
+YanFun.cal_PL=@cal_PL;
 YanFun.FDE_Gaussian=@FDE_Gaussian;
 YanFun.FDE_BayesGMM_seperate=@FDE_BayesGMM_seperate;
 YanFun.FDE_BayesGMM_union=@FDE_BayesGMM_union;
 YanFun.geneStateGMM=@geneStateGMM;
 YanFun.FDE_mc_compare=@FDE_mc_compare;
 YanFun.T1transpp_bound=@T1transpp_bound;
+YanFun.gen_s1_s2=@gen_s1_s2;
 YanFun.compare_twoside_bound=@compare_twoside_bound;
 YanFun.gene_GMM_EM_zeroMean=@gene_GMM_EM_zeroMean;
 YanFun.cal_omega=@cal_omega;
 YanFun.binary_search=@binary_search;
 YanFun.inflate_GMM=@inflate_GMM;
+YanFun.customrand=@customrand;
+YanFun.matrix_ecef2enu=@matrix_ecef2enu;
 end
 
 
@@ -384,77 +386,98 @@ function [T1trans_pdf,cdf_T1transpp_right,cdf_T1transpp_left]=T1transpp_bound(Xd
     cdf_T1transpp_left=cdf_T1transpp_left*(x_lin(2)-x_lin(1));
 
 end
-%% Convolution
-function [pdf_fftconv,fft_conv_t]=distConv_fft(x,pdf_dist1,pdf_dist2)
-    % define discrete intervals
-    N = length(x);       
-    dx = x(2) - x(1);
-    % normalization of discrete pdf
-    pdf_dist1 = pdf_dist1 / sum(pdf_dist1*dx);
-    pdf_dist2 = pdf_dist2 / sum(pdf_dist2*dx);
-    % convolution
-    tic;
-    fft_pdf1=fft(pdf_dist1,2*N-1);
-    fft_pdf2=fft(pdf_dist2,2*N-1);
-    pdf_fftconv = ifft(fft_pdf1 .* fft_pdf2);
-    fft_conv_t=toc;
-    pdf_fftconv=pdf_fftconv/sum(pdf_fftconv*dx); % 归一化PDF
-    pdf_fftconv=pdf_fftconv(1,floor(N/2):floor(N/2)+N-1); % cut
+
+function [s1_list,s2_list]=gen_s1_s2(x_lin,Xdata,gmm_dist,add_mu,ax)
+    YanFun=Yan_functions;
+    mu1=gmm_dist.mu(1)+add_mu;
+    mu2=gmm_dist.mu(2)+add_mu;
+    sigma1=gmm_dist.Sigma(1);
+    sigma2=gmm_dist.Sigma(2);
+    p1=gmm_dist.ComponentProportion(1);
+    p2=1-p1;
+    % 基于bayes' method 计算s1, s2 分布
+    x=x_lin;
+    Nsamples=length(x);
+    s1_list=zeros(1,Nsamples);
+    s2_list=zeros(1,Nsamples);
+    for j=1:Nsamples
+        [s1,s2]=YanFun.cal_omega(x(j),mu1,sigma1,p1,mu2,sigma2,p2);
+        s1_list(j)=s1;
+        s2_list(j)=s2;
+    end
+    histogram(ax,Xdata,'normalization','pdf')
+    hold on
+    pdf_data=p1*normpdf(x,mu1,sqrt(sigma1))+p2*normpdf(x,mu2,sqrt(sigma2));
+    plot(ax,x,pdf_data,'k','LineWidth',2);
+    plot(ax,x,p1*normpdf(x,mu1,sqrt(sigma1)),'r','LineWidth',2);
+    plot(ax,x,p2*normpdf(x,mu2,sqrt(sigma2)),'b','LineWidth',2);
+    plot(ax,x,s1_list,'r--','LineWidth',2);
+    plot(ax,x,s2_list,'b--','LineWidth',2);
+    xline(ax,quantile(Xdata,0.05/2));
+    xline(ax,quantile(Xdata,1-0.05/2));
+    xline(ax,median(Xdata));
 end
 
-function [pdf_fftconv,fft_conv_t]=distConv_fft_org(x,pdf_dist1,pdf_dist2)
+%% Convolution
+% convolution of two distribution 
+function [pdf_conv,x_conv,conv_t]=distConv_org(x1,x2,pdf_dist1,pdf_dist2,method)
 % https://ww2.mathworks.cn/matlabcentral/answers/1440944-request-for-help-computing-convolution-of-random-variables-via-fft
     % define output length
     N1 = length(pdf_dist1);       
     N2 = length(pdf_dist2);  
     N=N1+N2-1;
-    % define delta_x
-    dx = x(2) - x(1);
+    % define delta_x (x1 and x2 should have the same delta_x)
+    dx = x1(2) - x1(1);
+    
     % convolution
-    tic;
-    fft_pdf1=fft(pdf_dist1,N);
-    fft_pdf2=fft(pdf_dist2,N);
-    pdf_fftconv = ifft(fft_pdf1 .* fft_pdf2);
-    fft_conv_t=toc;
-    pdf_fftconv=pdf_fftconv*dx; % multiple dx
-end
-
-
-function [pdf_dconv,conv_t]=distConv(x,pdf_dist1,pdf_dist2)
-    % define discrete intervals
-    N = length(x);       
-    dx = x(2) - x(1);
-    % normalization of discrete pdf
-    pdf_dist1 = pdf_dist1 / sum(pdf_dist1*dx);
-    pdf_dist2 = pdf_dist2 / sum(pdf_dist2*dx);
-    % convolution
-    [pdf_dconv,conv_t]=get_conv(x,pdf_dist1,pdf_dist2);
-end
-
-function [pdf_convfft,ts_fft_all]=selfConv_fft(x,pdf_dist,num_conv)
-    ts_fft_all=0;
-    [pdf_convfft,ts_fft]=distConv_fft(x,pdf_dist,pdf_dist);
-    ts_fft_all=ts_fft_all+ts_fft;
-    for i=1:num_conv-1
-        [pdf_convfft,ts_fft]=distConv_fft(x,pdf_convfft,pdf_dist);
-        ts_fft_all=ts_fft_all+ts_fft;
+    if method=="fft"
+        tic;
+        fft_pdf1=fft(pdf_dist1,N);
+        fft_pdf2=fft(pdf_dist2,N);
+        pdf_fftconv = ifft(fft_pdf1 .* fft_pdf2);
+        conv_t=toc;
+        pdf_conv=pdf_fftconv*dx; % multiple dx
+    elseif method=="direct"
+        tic;
+        pdf_conv=conv(pdf_dist1,pdf_dist2)*dx;
+        conv_t=toc;    
     end
-end
+    
+    min_x=min(x1)+min(x2);
+    max_x=max(x1)+max(x2);
+%     x_fftconv=min_x:dx:max_x; % bug: not enough number
+    x_conv=linspace(min_x,max_x,N);
+    end
 
-function [pdf_conv,ts_all]=selfConv(x,pdf_dist,num_conv)
+% self-convolution (multiple times)
+function [pdf_conv,ts_all]=distSelfConv(x,pdf_dist,num_conv,method)
     ts_all=0;
-    [pdf_conv,ts]=distConv(x,pdf_dist,pdf_dist);
-    ts_all=ts_all+ts;
+    [pdf_conv,x_conv,conv_t]=distConv_org(x,x,pdf_dist,pdf_dist,method);
+    pdf_conv=interp1(x_conv,pdf_conv,x,...
+           'linear','extrap');
+    ts_all=ts_all+conv_t;
     for i=1:num_conv-1
-        [pdf_conv,ts]=distConv(x,pdf_dist,pdf_dist);
-        ts_all=ts_all+ts;
+        [pdf_conv,x_conv,conv_t]=distConv_org(x,x,pdf_conv,pdf_dist,method);
+        pdf_conv=interp1(x_conv,pdf_conv,x,...
+           'linear','extrap');
+        ts_all=ts_all+conv_t;
     end
+end
+
+function [yc,tt]=get_conv(x,y1,y2)
+    x = x';
+    xc = 2*x;
+    tic;
+    yc = conv(y1,y2)*(x(2)-x(1));
+    tt=toc;
+    yc = interp1(xc,yc(1:2:end),x,...
+       'linear','extrap');
 end
 
 function compareConvOverbound(x,pdf_ob,pdf_data,num_conv)
     for i=1:num_conv
-        [pdf_data,~]=selfConv_fft(x,pdf_data,i);
-        [pdf_ob,~]=selfConv_fft(x,pdf_ob,i);
+        [pdf_data,~]=distSelfConv(x,pdf_data,i,"fft");
+        [pdf_ob,~]=distSelfConv(x,pdf_ob,i,"fft");
         cdf_data = cumtrapz(pdf_data)*(x(2)-x(1));
         cdf_ob = cumtrapz(pdf_ob)*(x(2)-x(1));
         h=figure;
@@ -464,6 +487,59 @@ function compareConvOverbound(x,pdf_ob,pdf_data,num_conv)
         plot(x,sign(cdf_ob-cdf_data),'m','LineWidth',2);
         waitfor(h);
     end
+end
+
+%% Protection level
+function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(x_lin,pdf_pgo,std_tsgo,scale_list,x_scale,params_pgo)
+    YanFun=Yan_functions;
+    if scale_list(1)==0
+        return
+    end
+    fft_time_all=0;
+    [func_conv,~,~]=YanFun.two_piece_pdf(x_scale/scale_list(1),params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % 解析式求解
+    x_conv=x_scale;
+    
+    coeff=abs(1/scale_list(1));
+%     figure;plot(x_conv,func_conv); hold on
+    for i=2:length(scale_list)
+        s=scale_list(i);
+        if s==0
+            error('s=0');
+        end
+
+        [func_scale,~,~]=YanFun.two_piece_pdf(x_scale/s,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % 解析式求解
+%         func_conv=conv(func_conv,func_scale)*0.01; % convolution
+        [func_conv,x_conv,fft_time]=YanFun.distConv_org(x_conv,x_scale,func_conv,func_scale,"fft"); % fft
+        coeff=coeff*abs(1/s);
+        fft_time_all=fft_time_all+fft_time;
+%         plot(x_conv,func_conv);
+    end
+    pdf_obp=coeff*func_conv;
+    cdf_obp=cumtrapz(pdf_obp);
+    cdf_obp=cdf_obp*0.01;
+%     figure; 
+%     plot(x_conv,cdf_obp);
+
+    xaxi_list=x_conv;
+    cum_p=0;
+    PL_pgo=999; % cannot solve PL_pgo
+    for i=1:length(xaxi_list)
+        if cum_p>sum(pdf_obp)*1e-9/2
+            PL_pgo=xaxi_list(i);
+            break
+        end
+        cum_p=cum_p+pdf_obp(i);
+    end
+    if PL_pgo==999
+        error("PL_pgo cannot be solved");
+    else
+        disp(PL_pgo)
+    end
+
+    % Gaussian PL
+    std_position_tsgo=sum(abs(scale_list))*std_tsgo;
+    PL_gaussian=norminv(1e-9/2,0,std_position_tsgo);
+    disp(PL_gaussian)
 end
 
 %% FDE
@@ -572,10 +648,6 @@ function [FA_o,MD_o]=FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,method)
     elseif method == "max"
         MD_o=1-sum(sum(T_o_arr_max2>chi2inv(1-alpha,1)))/(N*num);
     end
-end
-
-function [FA_o,MD_o]=FDE_BayesGMM_union(alpha,seed,num,gmm_dist,bias,method)
-    a=0;
 end
 
 function [FA_arr,MD_arr,var_arr]=FDE_mc_compare(alpha,seed,num)
@@ -1019,15 +1091,6 @@ function idx = binary_search(arr, target)
     idx = -1;  % 如果未找到目标值，返回-1
 end
 
-function [yc,tt]=get_conv(x,y1,y2)
-    x = x';
-    xc = 2*x;
-    tic;
-    yc = conv(y1,y2)*(x(2)-x(1));
-    tt=toc;
-    yc = interp1(xc,yc(1:2:end),x,...
-       'linear','extrap');
-end
 
 function [gmm_dist]=gene_GMM_EM_zeroMean(Xdata)
 
@@ -1190,4 +1253,17 @@ function [gmm_dist]=gene_GMM_EM_onebias(Xdata)
     Miu = Miu(idx);
     Sigma2 = Sigma2(idx);
     gmm_dist = gmdistribution(vertcat(Miu{:}), cat(3, Sigma2{:}), Pi);
+end
+
+function [M]=matrix_ecef2enu(p)
+% https://www.cnblogs.com/charlee44/p/15382659.html
+    B=p.B*(pi/180);L=p.L*(pi/180);H=p.H;
+    Xp=p.Xp;Yp=p.Yp;Zp=p.Zp;
+    R=[-sin(L),cos(L), 0, 0;
+       -sin(B)*cos(L), -sin(B)*sin(L), cos(B), 0;
+       cos(B)*cos(L),cos(B)*sin(L),sin(B),0;
+       0,0,0,1];
+   T=eye(4);
+   T(:,4)=[-Xp,-Yp,-Zp,1];
+   M=R*T;
 end

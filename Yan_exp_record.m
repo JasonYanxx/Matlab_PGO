@@ -1,11 +1,32 @@
 clear all
 close all
 seed=1234;
-
+YanFun=Yan_functions;
 %% explore T1_trans method (20230701)
-% YanFun=Yan_functions;
+% % analysis whether T1_trans can be modelled as an overbound
 % [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFun.load_GMM(seed);
 % YanFun.compare_twoside_bound(Xdata,x_lin,gmm_dist)
+
+%% explore Fault detection (20230702)
+% % explore how conservatism will affect fault detection performance
+% % GMM
+% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFun.load_GMM(seed);
+% % Two-step Gaussian overbound (zero-mean)
+% [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin);
+% % Total Gaussian overbound
+% [mean_tgo, std_tgo, pdf_tgo, cdf_tgo]=YanFun.total_Gaussian_bound(Xdata,x_lin,gmm_dist);
+% 
+% % FDE params
+% alpha=0.05;
+% num=6;
+% bias=quantile(Xdata,0.001/2);
+% % different method
+% [FA_Gaussian,MD_Gaussian]=YanFun.FDE_Gaussian(alpha,seed,num,gmm_dist,bias,std_tsgo^2);
+% [FA_tGaussian,MD_tGaussian]=YanFun.FDE_Gaussian(alpha,seed,num,gmm_dist,bias,std_tgo^2);
+% [FA_Bayes_max,MD_Bayes_max]=YanFun.FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,"max");
+% [FA_Bayes_sum,MD_Bayes_sum]=YanFun.FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,"sum");
+% % Monte-Carlo simulation
+% [FA_arr,MD_arr,var_arr]=YanFun.FDE_mc_compare(alpha,seed,num);
 
 %% generate NIC dist.(20230704)
 % global mu;
@@ -26,7 +47,7 @@ seed=1234;
 % N = 100000; % number of random numbers to generate
 % interval = [-7, 7]; % interval over which pdf is defined
 % M = 1; % constant M for acceptance-rejection method
-% X = customrand(@nig_pdf, interval, N, M);
+% X = YanFun.customrand(@nig_pdf, interval, N, M)';
 % 
 % figure
 % plot(x,f_sam);
@@ -79,7 +100,7 @@ seed=1234;
 % pdf_gm = pdf_gm / sum(pdf_gm*dx); 
 % cdf_gm = cdf(gm,x');
 % % discrete pdf of overbound
-% pdf_pb=piece_bound_pdf(x);
+% pdf_pb=YanFun.two_piece_pdf(x,gm,-xp,xp);
 % pdf_pb = pdf_pb / sum(pdf_pb*dx);   % normalization
 % 
 % % fft
@@ -107,7 +128,7 @@ seed=1234;
 % % self-convolution
 % % pdf_gm_conv2=conv(pdf_gm,pdf_gm,'same');
 % % pdf_gm_conv2=pdf_gm_conv2/sum(pdf_gm_conv2*dx); % 归一化PDF
-% [pdf_gm_conv2,~]=get_conv(x,pdf_gm,pdf_gm);
+% [pdf_gm_conv2,~]=YanFun.get_conv(x,pdf_gm,pdf_gm);
 % plot(x,pdf_gm_conv2,'k--','linewidth',1);
 % tic;
 % fft_pdf2=fft(pdf_pb,2*N-1);
@@ -121,7 +142,7 @@ seed=1234;
 % % conv_t=toc;
 % % pdf_dconv2=pdf_dconv2/sum(pdf_dconv2*dx); % 归一化PDF
 % % pdf_dconv2=pdf_dconv2(1,floor(N/2):floor(N/2)+N-1); %cut
-% [pdf_dconv2,conv_t]=get_conv(x,pdf_pb,pdf_pb);
+% [pdf_dconv2,conv_t]=YanFun.get_conv(x,pdf_pb,pdf_pb);
 % plot(x,pdf_dconv2,'r:','linewidth',1);
 % A = legend('sample','pb','recon pb','sample conv','fft ifft conv','direct conv');
 % set(A,'FontSize',12)
@@ -142,6 +163,21 @@ seed=1234;
 % A = legend('sample','sample conv','fft ifft pb conv','direct pb conv','sign fft ifft pb conv');
 % set(A,'FontSize',12)
 
+%% compare fft & conv (20230715)
+% x_lin=-5:0.01:5;
+% pdf_data=normpdf(x_lin,0,2);
+% 
+% x=x_lin;
+% dt=abs(x_lin(1)-x_lin(2));
+% pdf_conv=conv(pdf_data,pdf_data)*dt;
+% [pdf_conv_org,x_fftconv,conv_t_org]=YanFun.distConv_org(x,x,pdf_data,pdf_data,"direct");
+% [pdf_fftconv_org,x_fftconv_org,fft_conv_t_org]=YanFun.distConv_org(x,x,pdf_data,pdf_data,"fft");
+% 
+% plot(x_fftconv,pdf_conv_org);
+% hold on
+% plot(x_fftconv_org,pdf_fftconv_org);
+
+
 %% Generalized Pareto overbound (20230717)
 % % define error dist. (GMM)
 % p1=0.9;
@@ -156,10 +192,10 @@ seed=1234;
 % 
 % % right-tail overbound
 % global thr_R xi_R sigma_R theta_R
-% [thr_R,theta_R,xi_R,sigma_R]=gp_tail_overbound(Xdata);
+% [thr_R,theta_R,xi_R,sigma_R]=YanFun.gp_tail_overbound(Xdata);
 % % left-tail overbound
 % global thr_L xi_L sigma_L theta_L
-% [thr_L,theta_L,xi_L,sigma_L]=gp_tail_overbound(-Xdata);
+% [thr_L,theta_L,xi_L,sigma_L]=YanFun.gp_tail_overbound(-Xdata);
 % thr_L=-thr_L;
 % % Gaussian core overbound - Two-step method
 % Nbins = 100;
@@ -242,7 +278,7 @@ seed=1234;
 % gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
 % gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,1,2.2) % inflate_ref30: (1,1.15); inflate_urban_30-80: (1.2,2); inflate_urban_30:
 % [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.9); %ref30:0.9; ref60:0.7; urban_30-80:0.9
-% [s1_list,s2_list]=gen_s1_s2(x_lin,Xdata,gmm_dist,0,ax);
+% [s1_list,s2_list]=YanFun.gen_s1_s2(x_lin,Xdata,gmm_dist,0,ax);
 % plot(ax,x_lin,pdf_pgo,'g','LineWidth',2);
 % 
 % ax=subplot(1,3,2);
@@ -251,7 +287,7 @@ seed=1234;
 % Xleft_recon=[Xleft;2*Xmedian-Xleft;Xmedian];
 % gmm_dist_left=YanFun.gene_GMM_EM_zeroMean(Xleft_recon-mean(Xleft_recon));
 % gmm_dist_left=YanFun.inflate_GMM(gmm_dist_left,1,1.5) % inflate: 1.1; inflate: 1.5
-% [s1_list,s2_list]=gen_s1_s2(x_lin,Xleft_recon,gmm_dist_left,mean(Xleft_recon),ax);
+% [s1_list,s2_list]=YanFun.gen_s1_s2(x_lin,Xleft_recon,gmm_dist_left,mean(Xleft_recon),ax);
 % [params_pgo_left, pdf_pgo_left, cdf_pgo_left]=YanFun.Principal_Gaussian_bound(Xleft_recon-mean(Xleft_recon),x_lin,gmm_dist_left,0.7);
 % plot(ax,x_lin+mean(Xleft_recon),pdf_pgo_left,'g','LineWidth',2);
 % 
@@ -261,7 +297,7 @@ seed=1234;
 % Xright_recon=[Xright;2*Xmedian-Xright;Xmedian];
 % gmm_dist_right=YanFun.gene_GMM_EM_zeroMean(Xright_recon-mean(Xright_recon));
 % gmm_dist_right=YanFun.inflate_GMM(gmm_dist_right,1,1.5) % inflate: 1.1;inflate: 1.5
-% [s1_list,s2_list]=gen_s1_s2(x_lin,Xright_recon,gmm_dist_right,mean(Xright_recon),ax);
+% [s1_list,s2_list]=YanFun.gen_s1_s2(x_lin,Xright_recon,gmm_dist_right,mean(Xright_recon),ax);
 % [params_pgo_right, pdf_pgo_right, cdf_pgo_right]=YanFun.Principal_Gaussian_bound(Xright_recon-mean(Xright_recon),x_lin,gmm_dist_right,0.9);
 % plot(ax,x_lin+mean(Xright_recon),pdf_pgo_right,'g','LineWidth',2);
 % 
@@ -367,38 +403,6 @@ seed=1234;
 % set(A,'FontSize',12)
 % set(gca, 'FontSize', 12,'FontName', 'Times New Roman');
 
-
-function [s1_list,s2_list]=gen_s1_s2(x_lin,Xdata,gmm_dist,add_mu,ax)
-    YanFun=Yan_functions;
-    mu1=gmm_dist.mu(1)+add_mu;
-    mu2=gmm_dist.mu(2)+add_mu;
-    sigma1=gmm_dist.Sigma(1);
-    sigma2=gmm_dist.Sigma(2);
-    p1=gmm_dist.ComponentProportion(1);
-    p2=1-p1;
-    % 基于bayes' method 计算s1, s2 分布
-    x=x_lin;
-    Nsamples=length(x);
-    s1_list=zeros(1,Nsamples);
-    s2_list=zeros(1,Nsamples);
-    for j=1:Nsamples
-        [s1,s2]=YanFun.cal_omega(x(j),mu1,sigma1,p1,mu2,sigma2,p2);
-        s1_list(j)=s1;
-        s2_list(j)=s2;
-    end
-    histogram(ax,Xdata,'normalization','pdf')
-    hold on
-    pdf_data=p1*normpdf(x,mu1,sqrt(sigma1))+p2*normpdf(x,mu2,sqrt(sigma2));
-    plot(ax,x,pdf_data,'k','LineWidth',2);
-    plot(ax,x,p1*normpdf(x,mu1,sqrt(sigma1)),'r','LineWidth',2);
-    plot(ax,x,p2*normpdf(x,mu2,sqrt(sigma2)),'b','LineWidth',2);
-    plot(ax,x,s1_list,'r--','LineWidth',2);
-    plot(ax,x,s2_list,'b--','LineWidth',2);
-    xline(ax,quantile(Xdata,0.05/2));
-    xline(ax,quantile(Xdata,1-0.05/2));
-    xline(ax,median(Xdata));
-end
-
 function y=GaussPareto_cdf(data)
     y=zeros(size(data));
     for i=1:size(data,2)
@@ -427,34 +431,6 @@ function [y]=GaussPareto_cdf_func(x)
     end
 end
 
-function [threshold,theta,xi,sigma]=gp_tail_overbound(xData)
-    xData=sort(xData);
-    Nsamples=length(xData);
-    % adjust threhold
-    threshold_min=quantile(xData,1-0.1);
-    threshold_max=quantile(xData,1-250/Nsamples);
-    thr_range=threshold_min:0.001:threshold_max;
-    candidate_list=zeros(length(thr_range),5);
-    for i=1:length(thr_range)
-        threshold=thr_range(i);
-        fit_xData = xData(xData >= threshold);
-        fit_xData=fit_xData-threshold; % move to center
-        % mle 
-        params = mle(fit_xData, 'distribution', 'GeneralizedPareto');
-        theta=0; % location
-        xi=params(1); % shape
-        sigma=params(2); % scale
-        pd=makedist('gp','k',xi,'sigma',sigma,'theta',theta);
-        x_ext=icdf(pd,1-1e-7);
-        candidate_list(i,:)=[threshold theta xi sigma x_ext];
-    end
-
-    % select params yeild the largest x_ext
-    [~, index] = max(candidate_list(:,5));
-    maxRow = candidate_list(index,:);
-    [threshold,theta,xi,sigma,x_ext]=deal(maxRow(1), maxRow(2), maxRow(3), maxRow(4), maxRow(5));
-end
-
 function f = nig_function(x,alpha,beta,delta,mu)
     gama=sqrt(alpha^2-beta^2);
     f = alpha*delta*exp(beta*(x-mu)+delta*gama)*besselk(1,alpha*sqrt(delta^2+(x-mu)^2))/(pi*sqrt(delta^2+(x-mu)^2));
@@ -473,53 +449,4 @@ function y = nig_pdf(data)
         x=data(i);
         y(i) = nig_function(x,alpha,beta,delta,mu);
     end
-end
-
-function X = customrand(y_pdf, interval, N, M)
-% acceptance-rejection method to generate samples
-    a = interval(1);
-    b = interval(2);
-    X = zeros(1, N);
-    count = 0;
-    while count < N
-        x = a + (b - a).*rand(1, N);
-        u = rand(1, N);
-        idx = u <= y_pdf(x)./M;
-        X(count+1:count+sum(idx)) = x(idx);
-        count = count + sum(idx);
-    end
-    X = X(1:N);
-end
-
-function y=piece_bound_pdf(x)
-    global p1 p2 mu1 mu2 sigma1 sigma2 xp
-    xL2p=-xp;
-    xR2p=xp;
-    % 计算分段函数的pdf -- two piece
-    Nsamples=length(x);
-    y=zeros(1,Nsamples);
-    k=p1*normcdf(xL2p,mu1,sqrt(sigma1))/(p2*normcdf(xL2p,mu2,sqrt(sigma2)));
-    cc=p2*(normcdf(xL2p,mu2,sqrt(sigma2))-0.5)/xL2p;
-    for j=1:Nsamples
-        if x(j)<xL2p
-            pp=p2*(1+k)*normpdf(x(j),mu2,sqrt(sigma2));
-        elseif x(j)<0
-            pp=p1*normpdf(x(j),mu1,sqrt(sigma1))+cc;
-        elseif x(j)<xR2p
-            pp=p1*normpdf(x(j),mu1,sqrt(sigma1))+cc;
-        else
-            pp=p2*(1+k)*normpdf(x(j),mu2,sqrt(sigma2));
-        end
-        y(j)=pp;
-    end
-end
-
-function [yc,tt]=get_conv(x,y1,y2)
-    x = x';
-    xc = 2*x;
-    tic;
-    yc = conv(y1,y2)*(x(2)-x(1));
-    tt=toc;
-    yc = interp1(xc,yc(1:2:end),x,...
-       'linear','extrap');
 end

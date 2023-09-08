@@ -47,7 +47,6 @@ NstepsCdf = 1000;
 epsilon = 0.0025;
    
 % Right side overbound
-
 [mean_overbound, sigma_overbound, epsilon_achieved, intervals]=gaussian_overbound(sample_data, epsilon, Nbins, NstepsCdf);
 mean_overbound_r = mean_overbound;
 sigma_overbound_r = sigma_overbound;
@@ -77,7 +76,6 @@ cdf_T1transpp=flip(cdf_T1transpp);
 % plot(flip(xgmm), cdf_T1transpp, 'LineWidth', 2);
 
 %%
-
 if figures
     plot_cdfs
 end

@@ -1,19 +1,3 @@
-%% Paper-QQ plot of DGNSS errors
-p1=0.5;
-p2=1-p1;
-mu1=0;
-mu2=0;
-sigma1=0.02^2;
-sigma2=0.08^2;
-
-Nsamples=10001;
-dist = gmdistribution([mu1; mu2], cat(3, sigma1, sigma2), [p1 p2]);
-Xdata = random(dist, Nsamples);
-Xdata=(Xdata-mean(Xdata))/std(Xdata);
-
-Xnorm=randn(1,Nsamples);
-qqplot(Xdata,Xnorm);
-
 %% Paper-Overbounding compare: Fig.3, Fig.6
 % YanFun=Yan_functions;
 % seed=1234;
@@ -108,160 +92,160 @@ qqplot(Xdata,Xnorm);
 
 
 %% VPL and VPE series, PL compuation time: Fig. 7a,b
-% YanFun=Yan_functions;
-% seed=1234;
-% % load GMM
-% [Xdata,x_lin_org,pdf_data]=YanFun.load_UrbanDD();
-% [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
-% counts=length(x_lin_org);
-% % Principal Gaussian overbound (zero-mean)
-% gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
-% gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,2,1.5); % inflate: 1.15; inflate: (2,1.5)
-% [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin_org,gmm_dist,0.7);
-% % two-step Gaussian overbound (zero-mean)
-% [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin_org);
-% % expand the definition domian of the range domain error
-% lim=50;
-% Nsamples=100000;
-% AugCounts=floor((Nsamples-length(x_lin_org))/2);
-% delta_lin=abs(x_lin_org(1)-x_lin_org(2));
-% x_lin_exd_left= linspace(-lim, min(x_lin_org)-delta_lin, AugCounts);
-% x_lin_exd_right= linspace(max(x_lin_org)+delta_lin,lim, AugCounts);
-% x_lin_exd=[x_lin_exd_left x_lin_org x_lin_exd_right];
-% % obtain the excact value of pgo on the extended definition domain
-% [pdf_pgo_exd,~,~]=YanFun.two_piece_pdf(x_lin_exd,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); 
-% 
-% % set transformation matrix: ecef to enu
-% % 在线大地坐标系与空间直角坐标系转换 https://www.lddgo.net/convert/coordinate-transform
-% p_ecef=[-2418235.676841056 , 5386096.899553243 , 2404950.408609563];
-% p_lbh=[114.1790017,22.29773881,3];
-% p.L=p_lbh(1);p.B=p_lbh(2);p.H=p_lbh(3);
-% p.Xp=p_ecef(1);p.Yp=p_ecef(2);p.Zp=p_ecef(3);
-% M=matrix_ecef2enu(p);
-% 
-% % PL 
-% min_s=10000;
-% min_s_file='';
-% file_error='Data/Least_square_dd_urbandata/error_LSDD.csv';
-% error_data = readmatrix(file_error, 'NumHeaderLines', 1);
-% PL_pgo_list=zeros(length(error_data),1);
-% PL_gaussian_list=zeros(length(error_data),1);
-% cal_time_list=zeros(length(error_data),1);
-% num_sat_list=zeros(length(error_data),1);
-% xerr_list=zeros(length(error_data),1);
-% zerr_list=zeros(length(error_data),1);
-% gps_week=2238;
-% for i=1:length(error_data)
-%     % read file
-% %     % SPP file
-% %     gps_sec=error_data(i,1);
-% %     unix_sec= gps_week * 604800.0 + gps_sec + 315964800.0 + 19.0;
-% %     xy_error=error_data(i,2);
-% %     xyz_error=error_data(i,3);
-%     % DGNSS file
-%     unix_sec = error_data(i,1);
-%     xy_error=error_data(i,4);
-%     xyz_error=error_data(i,5);
-%     
-%     z_error=sqrt(xyz_error^2-xy_error^2);
-%     xerr_list(i)=xy_error;
-%     zerr_list(i)=z_error;
-%     
-%     % Open file by filename wildcard 
-%     folder = 'Data/Least_square_dd_urbandata/DD_S_matrix';
-%     field=num2str(unix_sec);
-%     wildcard = fullfile(folder, ['*' field '*']);
-%     fileList = dir(wildcard);
-%     if isempty(fileList)
+YanFun=Yan_functions;
+seed=1234;
+% load GMM
+[Xdata,x_lin_org,pdf_data]=YanFun.load_UrbanDD();
+[ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+counts=length(x_lin_org);
+% Principal Gaussian overbound (zero-mean)
+gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
+gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,2,1.5); % inflate: 1.15; inflate: (2,1.5)
+[params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin_org,gmm_dist,0.7);
+% two-step Gaussian overbound (zero-mean)
+[mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin_org);
+% expand the definition domian of the range domain error
+lim=50;
+Nsamples=100000;
+AugCounts=floor((Nsamples-length(x_lin_org))/2);
+delta_lin=abs(x_lin_org(1)-x_lin_org(2));
+x_lin_exd_left= linspace(-lim, min(x_lin_org)-delta_lin, AugCounts);
+x_lin_exd_right= linspace(max(x_lin_org)+delta_lin,lim, AugCounts);
+x_lin_exd=[x_lin_exd_left x_lin_org x_lin_exd_right];
+% obtain the excact value of pgo on the extended definition domain
+[pdf_pgo_exd,~,~]=YanFun.two_piece_pdf(x_lin_exd,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); 
+
+% set transformation matrix: ecef to enu
+% 在线大地坐标系与空间直角坐标系转换 https://www.lddgo.net/convert/coordinate-transform
+p_ecef=[-2418235.676841056 , 5386096.899553243 , 2404950.408609563];
+p_lbh=[114.1790017,22.29773881,3];
+p.L=p_lbh(1);p.B=p_lbh(2);p.H=p_lbh(3);
+p.Xp=p_ecef(1);p.Yp=p_ecef(2);p.Zp=p_ecef(3);
+M=YanFun.matrix_ecef2enu(p);
+
+% PL 
+min_s=10000;
+min_s_file='';
+file_error='Data/Least_square_dd_urbandata/error_LSDD.csv';
+error_data = readmatrix(file_error, 'NumHeaderLines', 1);
+PL_pgo_list=zeros(length(error_data),1);
+PL_gaussian_list=zeros(length(error_data),1);
+cal_time_list=zeros(length(error_data),1);
+num_sat_list=zeros(length(error_data),1);
+xerr_list=zeros(length(error_data),1);
+zerr_list=zeros(length(error_data),1);
+gps_week=2238;
+for i=1:length(error_data)
+    % read file
+%     % SPP file
+%     gps_sec=error_data(i,1);
+%     unix_sec= gps_week * 604800.0 + gps_sec + 315964800.0 + 19.0;
+%     xy_error=error_data(i,2);
+%     xyz_error=error_data(i,3);
+    % DGNSS file
+    unix_sec = error_data(i,1);
+    xy_error=error_data(i,4);
+    xyz_error=error_data(i,5);
+    
+    z_error=sqrt(xyz_error^2-xy_error^2);
+    xerr_list(i)=xy_error;
+    zerr_list(i)=z_error;
+    
+    % Open file by filename wildcard 
+    folder = 'Data/Least_square_dd_urbandata/DD_S_matrix';
+    field=num2str(unix_sec);
+    wildcard = fullfile(folder, ['*' field '*']);
+    fileList = dir(wildcard);
+    if isempty(fileList)
+        continue
+    end
+    filename = fullfile(folder, fileList(1).name);
+    S_mat = load(filename);
+    
+    % skip invalid file
+%     % for SPP
+%     if size(S_mat,1)~=6 
 %         continue
 %     end
-%     filename = fullfile(folder, fileList(1).name);
-%     S_mat = load(filename);
-%     
-%     % skip invalid file
-% %     % for SPP
-% %     if size(S_mat,1)~=6 
-% %         continue
-% %     end
-%     % for DGNSS
-%     if size(S_mat,2)<3 
-%         continue
+    % for DGNSS
+    if size(S_mat,2)<3 
+        continue
+    end
+    
+    % use the positioning part of S matrix
+    S_matp=S_mat(1:3,:);
+    % agumentation
+    S_matpa=zeros(size(S_matp,1)+1,size(S_matp,2)+1);
+    S_matpa(1:size(S_matp,1),1:size(S_matp,2))=S_matp;
+    S_matpa(end,end)=1;
+    % transform
+    S_matTrans=M*S_matpa;
+    % use the core part
+    S_matTransCore=S_matTrans(1:end-1,1:end-1);
+  
+%     scale_list=S_matTransCore(1,:); % related to x error (enu) min_s=0.001410985784173
+%     scale_list=S_mat(2,:); % related to y error (ecef)  min_s=4.974492589715496e-05
+    scale_list=S_mat(3,:); % related to z error (ecef)  min_s=2.313112008120455e-04
+    num_sat_list(i)=length(scale_list);
+    
+%     % for debug
+%     if min_s>min(abs(scale_list))
+%         min_s=min(abs(scale_list));
+%         min_s_file=field;
 %     end
-%     
-%     % use the positioning part of S matrix
-%     S_matp=S_mat(1:3,:);
-%     % agumentation
-%     S_matpa=zeros(size(S_matp,1)+1,size(S_matp,2)+1);
-%     S_matpa(1:size(S_matp,1),1:size(S_matp,2))=S_matp;
-%     S_matpa(end,end)=1;
-%     % transform
-%     S_matTrans=M*S_matpa;
-%     % use the core part
-%     S_matTransCore=S_matTrans(1:end-1,1:end-1);
-%   
-% %     scale_list=S_matTransCore(1,:); % related to x error (enu) min_s=0.001410985784173
-% %     scale_list=S_mat(2,:); % related to y error (ecef)  min_s=4.974492589715496e-05
-%     scale_list=S_mat(3,:); % related to z error (ecef)  min_s=2.313112008120455e-04
-%     num_sat_list(i)=length(scale_list);
-%     
-% %     % for debug
-% %     if min_s>min(abs(scale_list))
-% %         min_s=min(abs(scale_list));
-% %         min_s_file=field;
-% %     end
-%    
-%     % set definition domain of the position domain
-%     x_scale=-30:0.01:30;
-%     try
-%         [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(x_lin_exd,pdf_pgo_exd,std_tsgo,scale_list,x_scale,params_pgo);
-%         PL_pgo_list(i)=PL_pgo;
-%         PL_gaussian_list(i)=PL_gaussian;
-%         cal_time_list(i)=fft_time_all;
-%     catch exception
-%         disp('Error!');
-%     end
-% end
-% 
-% err_list=zerr_list;
-% % save PE and PL for Stanford chart plot
-% % save("Urban_PL2.mat","err_list","PL_pgo","PL_gaussian")
-% 
-% % plot times series of PL and PE
-% figure
-% yyaxis left
-% h1=plot(1:length(error_data),abs(err_list),'k-','linewidth',1.5);
-% hold on
-% h2=plot(1:length(error_data),abs(PL_gaussian_list),'g-','linewidth',1);
-% h3=plot(1:length(error_data),abs(PL_pgo_list),'b-','linewidth',1);
-% ylim([0 200])
-% ylabel('HPL (m)','FontSize',12);
-% yyaxis right
-% h4=plot(1:length(error_data),num_sat_list,'c:','linewidth',1);
-% ylim([0 55])
-% ylabel('Measurement counts');
-% xlabel('Time (s)');
-% xlim([0 1100])
-% ax = gca;
-% ax.YAxis(1).Color = 'black';
-% ax.YAxis(2).Color = 'black';
-% A = legend([h1,h2,h3,h4],'Error','Gaussian','Principal Gaussian','Counts');
-% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
-% set(A,'FontSize',13.5)
-% 
-% % summarize computation time
-% format long
-% A = cal_time_list; % array to be cluster
-% B = num_sat_list;  % index of clusers
-% uniqueValues = unique(B);
-% meanValue_list=groupsummary(A,B,'mean');
-% % plot computation time of PL
-% figure
-% scatter(num_sat_list,cal_time_list,'ko')
-% hold on
-% plot(uniqueValues,meanValue_list,'r-*');
-% ylabel('Computation time (s)');
-% xlabel('Number of measurements');
-% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+   
+    % set definition domain of the position domain
+    x_scale=-30:0.01:30;
+    try
+        [PL_pgo,PL_gaussian,fft_time_all]=YanFun.cal_PL(x_lin_exd,pdf_pgo_exd,std_tsgo,scale_list,x_scale,params_pgo);
+        PL_pgo_list(i)=PL_pgo;
+        PL_gaussian_list(i)=PL_gaussian;
+        cal_time_list(i)=fft_time_all;
+    catch exception
+        disp('Error!');
+    end
+end
+
+err_list=zerr_list;
+% save PE and PL for Stanford chart plot
+% save("Urban_PL2.mat","err_list","PL_pgo","PL_gaussian")
+
+% plot times series of PL and PE
+figure
+yyaxis left
+h1=plot(1:length(error_data),abs(err_list),'k-','linewidth',1.5);
+hold on
+h2=plot(1:length(error_data),abs(PL_gaussian_list),'g-','linewidth',1);
+h3=plot(1:length(error_data),abs(PL_pgo_list),'b-','linewidth',1);
+ylim([0 200])
+ylabel('HPL (m)','FontSize',12);
+yyaxis right
+h4=plot(1:length(error_data),num_sat_list,'c:','linewidth',1);
+ylim([0 55])
+ylabel('Measurement counts');
+xlabel('Time (s)');
+xlim([0 1100])
+ax = gca;
+ax.YAxis(1).Color = 'black';
+ax.YAxis(2).Color = 'black';
+A = legend([h1,h2,h3,h4],'Error','Gaussian','Principal Gaussian','Counts');
+set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+set(A,'FontSize',13.5)
+
+% summarize computation time
+format long
+A = cal_time_list; % array to be cluster
+B = num_sat_list;  % index of clusers
+uniqueValues = unique(B);
+meanValue_list=groupsummary(A,B,'mean');
+% plot computation time of PL
+figure
+scatter(num_sat_list,cal_time_list,'ko')
+hold on
+plot(uniqueValues,meanValue_list,'r-*');
+ylabel('Computation time (s)');
+xlabel('Number of measurements');
+set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 
 
 %% paper-Stanford chart: Fig. 7c,d
@@ -394,80 +378,6 @@ qqplot(Xdata,Xnorm);
 % Xleft_recon_center=Xleft_recon-Xmedian;
 % histogram(Xleft_recon_center,'BinWidth',0.2,'FaceColor','g');
 % plot(x_lin,pdf_pgo_left*length(Xdata)*0.2,'r','LineWidth',2);
-
-%% functions
-function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(x_lin,pdf_pgo,std_tsgo,scale_list,x_scale,params_pgo)
-    YanFun=Yan_functions;
-    if scale_list(1)==0
-        return
-    end
-    fft_time_all=0;
-%     func_conv=scale_by_geometry(x_lin,pdf_pgo,x_scale,scale_list(1)); % the first
-    [func_conv,~,~]=YanFun.two_piece_pdf(x_scale/scale_list(1),params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % 解析式求解
-    
-    coeff=abs(1/scale_list(1));
-%     figure;plot(min(x_scale):0.01:max(x_scale),func_conv);hold on
-    for i=2:length(scale_list)
-        s=scale_list(i);
-        if s==0
-            error('s=0');
-        end
-%         func_scale=scale_by_geometry(x_lin,pdf_pgo,x_scale,s); % the first
-        [func_scale,~,~]=YanFun.two_piece_pdf(x_scale/s,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % 解析式求解
-%         func_conv=conv(func_conv,func_scale)*0.01; % convolution
-        [func_conv,fft_time]=YanFun.distConv_fft_org(x_scale,func_conv,func_scale); % fft
-        coeff=coeff*abs(1/s);
-        fft_time_all=fft_time_all+fft_time;
-%         plot(min(x_scale)*i:0.01:max(x_scale)*i,func_conv)
-    end
-    pdf_obp=coeff*func_conv;
-    cdf_obp=cumtrapz(pdf_obp);
-    cdf_obp=cdf_obp*0.01;
-%     figure; plot(min(x_scale)*i:0.01:max(x_scale)*i,cdf_obp)
-
-    xaxi_list=min(x_scale)*i:0.01:max(x_scale)*i;
-    cum_p=0;
-    PL_pgo=999; % cannot solve PL_pgo
-    for i=1:length(xaxi_list)
-        if cum_p>sum(pdf_obp)*1e-9/2
-            PL_pgo=xaxi_list(i);
-            break
-        end
-        cum_p=cum_p+pdf_obp(i);
-    end
-    if PL_pgo==999
-        error("PL_pgo cannot be solved");
-    else
-        disp(PL_pgo)
-    end
-
-    % Gaussian PL
-    std_position_tsgo=sum(abs(scale_list))*std_tsgo;
-    PL_gaussian=norminv(1e-9/2,0,std_position_tsgo);
-    disp(PL_gaussian)
-end
-
-function [M]=matrix_ecef2enu(p)
-% https://www.cnblogs.com/charlee44/p/15382659.html
-    B=p.B*(pi/180);L=p.L*(pi/180);H=p.H;
-    Xp=p.Xp;Yp=p.Yp;Zp=p.Zp;
-    R=[-sin(L),cos(L), 0, 0;
-       -sin(B)*cos(L), -sin(B)*sin(L), cos(B), 0;
-       cos(B)*cos(L),cos(B)*sin(L),sin(B),0;
-       0,0,0,1];
-   T=eye(4);
-   T(:,4)=[-Xp,-Yp,-Zp,1];
-   M=R*T;
-end
-
-function [pdf_scale]=scale_by_geometry(x_org,pdf_dist,x_scale,s)
-    x_scale=x_scale/s;
-    if min(x_scale)<min(x_org) || max(x_scale)>max(x_org)
-        disp(s);disp(min(x_scale));disp(max(x_scale))
-        error("overflow! please enlarge the size of original domain!");
-    end
-    pdf_scale = interp1(x_org,pdf_dist,x_scale,'linear', 'extrap');
-end
 
 function d = Display(e,s)
     if s > 0.01
