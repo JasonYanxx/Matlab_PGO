@@ -296,9 +296,9 @@ end
 
 function [params,pdf_overbound,cdf_overbound]=Gaussian_Pareto_bound(Xdata,x_lin)
     % right-tail overbound
-    [params.thr_R,params.theta_R,params.xi_R,params.scale_R]=gp_tail_overbound(Xdata);
+    [params.thr_R,params.theta_R,params.xi_R,params.sigma_R]=gp_tail_overbound(Xdata);
     % left-tail overbound
-    [params.thr_L,params.theta_L,params.xi_L,params.scale_L]=gp_tail_overbound(-Xdata);
+    [params.thr_L,params.theta_L,params.xi_L,params.sigma_L]=gp_tail_overbound(-Xdata);
     params.thr_L=-params.thr_L;
     % zero-mean Gaussian core overbound - Two-step method
     Nbins = 100;
@@ -1040,17 +1040,17 @@ function [y]=GaussPareto_cdf_func(x,params)
     std_core=params.std_core;
     thr_L=params.thr_L;
     xi_L=params.xi_L;
-    scale_L=params.scale_L;
+    sigma_L=params.sigma_L;
     theta_L=params.theta_L;
     thr_R=params.thr_R;
     xi_R=params.xi_R;
-    scale_R=params.scale_R;
+    sigma_R=params.sigma_R;
     theta_R=params.theta_R;
     
     cdf_thrL=normcdf(thr_L,mean_core,std_core);
     cdf_thrR=normcdf(thr_R,mean_core,std_core);
-    gp_L=makedist('gp','k',xi_L,'sigma',scale_L,'theta',theta_L);
-    gp_R=makedist('gp','k',xi_R,'sigma',scale_R,'theta',theta_R);
+    gp_L=makedist('gp','k',xi_L,'sigma',sigma_L,'theta',theta_L);
+    gp_R=makedist('gp','k',xi_R,'sigma',sigma_R,'theta',theta_R);
     if x<thr_L
         z=thr_L-x;
         y=cdf_thrL-cdf(gp_L,z)*cdf_thrL;
@@ -1078,16 +1078,16 @@ function [threshold,theta,xi,scale]=gp_tail_overbound(xData)
         params = mle(fit_xData, 'distribution', 'GeneralizedPareto');
         theta=0; % location
         xi=params(1); % shape
-        scale=params(2); % scale
-        pd=makedist('gp','k',xi,'sigma',scale,'theta',theta);
+        sigma=params(2); % scale
+        pd=makedist('gp','k',xi,'sigma',sigma,'theta',theta);
         x_ext=icdf(pd,1-1e-7);
-        candidate_list(i,:)=[threshold theta xi scale x_ext];
+        candidate_list(i,:)=[threshold theta xi sigma x_ext];
     end
 
     % select params yeild the largest x_ext
     [~, index] = max(candidate_list(:,5));
     maxRow = candidate_list(index,:);
-    [threshold,theta,xi,scale,x_ext]=deal(maxRow(1), maxRow(2), maxRow(3), maxRow(4), maxRow(5));
+    [threshold,theta,xi,sigma,x_ext]=deal(maxRow(1), maxRow(2), maxRow(3), maxRow(4), maxRow(5));
 end
 
 function [omega1,omega2]=cal_omega(y,mu1,sigma1,pi_1,mu2,sigma2,pi_2)

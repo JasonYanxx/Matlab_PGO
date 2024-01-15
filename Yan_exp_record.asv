@@ -191,11 +191,11 @@ YanFun=Yan_functions;
 % Xdata=random(gm, Nsamples);
 % 
 % % right-tail overbound
-% global thr_R xi_R scale_R theta_R
-% [thr_R,theta_R,xi_R,scale_R]=YanFun.gp_tail_overbound(Xdata);
+% global thr_R xi_R sigma_R theta_R
+% [thr_R,theta_R,xi_R,sigma_R]=YanFun.gp_tail_overbound(Xdata);
 % % left-tail overbound
-% global thr_L xi_L scale_L theta_L
-% [thr_L,theta_L,xi_L,scale_L]=YanFun.gp_tail_overbound(-Xdata);
+% global thr_L xi_L sigma_L theta_L
+% [thr_L,theta_L,xi_L,sigma_L]=YanFun.gp_tail_overbound(-Xdata);
 % thr_L=-thr_L;
 % % Gaussian core overbound - Two-step method
 % Nbins = 100;
@@ -982,13 +982,13 @@ end
 
 function [y]=GaussPareto_cdf_func(x)
     global mean_core std_core
-    global thr_L xi_L scale_L theta_L
-    global thr_R xi_R scale_R theta_R
+    global thr_L xi_L sigma_L theta_L
+    global thr_R xi_R sigma_R theta_R
     
     cdf_thrL=normcdf(thr_L,mean_core,std_core);
     cdf_thrR=normcdf(thr_R,mean_core,std_core);
-    gp_L=makedist('gp','k',xi_L,'sigma',scale_L,'theta',theta_L);
-    gp_R=makedist('gp','k',xi_R,'sigma',scale_R,'theta',theta_R);
+    gp_L=makedist('gp','k',xi_L,'sigma',sigma_L,'theta',theta_L);
+    gp_R=makedist('gp','k',xi_R,'sigma',sigma_R,'theta',theta_R);
     if x<thr_L
         z=thr_L-x;
         y=cdf_thrL-cdf(gp_L,z)*cdf_thrL;
@@ -1011,7 +1011,7 @@ function y = nig_pdf(data)
     global mu;
     global alpha;
     global delta;
-    global beta;pa
+    global beta;
 
     y=zeros(size(data));
     for i=1:size(data,2)

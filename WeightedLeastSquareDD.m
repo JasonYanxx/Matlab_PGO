@@ -1,8 +1,8 @@
-function [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GT_ecef, init_state, meas, meas_sigma, m_sv_pos,s_sv_pos,ref_xyz)
+function [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GT_ecef, init_state, meas, meas_std, m_sv_pos,s_sv_pos,ref_xyz)
 % init_state: initial state x0 [P_ecef;C_b] without switch or [P_ecef; C_b;
 % S_1;...S_M] with switch
 % meas: pseudorange measurements in single epoch
-% meas_sigma: std of pseudorange measurements
+% meas_std: std of pseudorange measurements
 % sv_pos: corresponding satellites' positions in ECEF;
 % sysidx: corresponding system index (3: GPS, 4: BDS)
 % useSW: ture for using switch variables, false for not using switch
@@ -67,7 +67,7 @@ function [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSq
 
         end
 
-        weight_matrix = inv(diag(meas_sigma.*meas_sigma));
+        weight_matrix = inv(diag(meas_std.*meas_std));
 %         weight_matrix = eye(iNumSV);
         eDeltaPos = inv(transpose(eH_Matrix) * weight_matrix * eH_Matrix) * ...
             transpose(eH_Matrix) * weight_matrix * eDeltaPr;
