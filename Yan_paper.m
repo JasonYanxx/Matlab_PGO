@@ -1,9 +1,84 @@
+%% Paper-demo: Fig. 1 & 2
+% close all
+% YanFun=Yan_functions;
+% p1=0.9;
+% p2=1-p1;
+% mu1=0;
+% mu2=0;
+% sigma1=0.5^2;
+% sigma2=1^2;
+% gm = gmdistribution([mu1; mu2], cat(3, sigma1, sigma2), [p1 p2]);
+% Nsamples=10001;
+% Xdata=random(gm, Nsamples);
+% lim=max(-min(Xdata),max(Xdata));
+% x_lin = linspace(-lim, lim, Nsamples);
+% [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gm,0.7);
+% [mean_tsgo, std_tsgo, ~, ~]=YanFun.two_step_bound_zero(Xdata,x_lin);
+% 
+% % member weight
+% figure;
+% yyaxis left
+% h1=plot(x_lin,pdf(gm,x_lin'),'k','LineWidth',2);
+% ylabel('PDF');
+% yyaxis right
+% h2=plot(x_lin,params_pgo.s1_list,'r','LineWidth',2);
+% hold on
+% h3=plot(x_lin,params_pgo.s2_list,'b','LineWidth',2);
+% h4=xline(params_pgo.xL2p,'k--','LineWidth',1.5);
+% h5=xline(params_pgo.xR2p,'r--','LineWidth',1.5);
+% ylim([0,1.5]);
+% ylabel('Membership Weight');
+% xlabel('Error');
+% ax = gca;
+% ax.YAxis(1).Color = 'black';
+% ax.YAxis(2).Color = 'black';
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h2,h3,h4,h5],'BGMM','s1(x)','s2(x)','xlp','xrp');
+% set(A,'FontSize',13.5)
+% grid on
+% 
+% 
+% % pdf
+% figure;
+% h1=plot(x_lin,pdf(gm,x_lin'),'k','LineWidth',2);
+% hold on
+% % PGO
+% h2=plot(x_lin,pdf_pgo,'b','LineWidth',2);
+% % Two step Gaussian
+% h3=plot(x_lin,normpdf(x_lin,mean_tsgo,std_tsgo),'g','LineWidth',2);
+% h4=xline(params_pgo.xL2p,'k--','LineWidth',1);
+% h5=xline(params_pgo.xR2p,'r--','LineWidth',1);   
+% xlabel('Error');
+% ylabel('PDF');
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h2,h3,h4,h5],'BGMM','Principal Gaussian','Gaussian','xlp','xrp');
+% set(A,'FontSize',13.5)
+% grid on
+% 
+% 
+% % cdf
+% figure;
+% h1=plot(x_lin,cdf(gm,x_lin'),'k','LineWidth',2);
+% hold on
+% % PGO
+% h2=plot(x_lin,cdf_pgo,'b','LineWidth',2);
+% % Two step Gaussian
+% h3=plot(x_lin,normcdf(x_lin,mean_tsgo,std_tsgo),'g','LineWidth',2);
+% h4=xline(params_pgo.xL2p,'k--','LineWidth',1);
+% h5=xline(params_pgo.xR2p,'r--','LineWidth',1);   
+% xlabel('Error');
+% ylabel('CDF');
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h2,h3,h4,h5],'BGMM','Principal Gaussian','Gaussian','xlp','xrp');
+% set(A,'FontSize',13.5)
+% grid on
+
 %% Paper-Overbounding compare: Fig.3, Fig.6
 % YanFun=Yan_functions;
 % seed=1234;
 % % load Data
-% % [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
-% [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
+% % [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin);
 % 
@@ -14,7 +89,7 @@
 % % Urban| 30-35| 1,   2.2 |  0.7  |
 % % Urban| 30-80| 1.2, 2   |  0.9  |
 % gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
-% gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,1,2.2) 
+% gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,1,1.15) 
 % [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.7); 
 % 
 % % qq plot
@@ -77,6 +152,7 @@
 
 %% Paper-Urban DGNSS error against SNR and Ele: Fig.5
 % load('Data/Urban_dd_0816/mergeurbandd.mat');
+% % load('Data/mnav_zmp1_jan/mergedRefJan.mat');
 % figure;
 % % 设置颜色映射
 % cmap = hot; % 使用 jet 色图
@@ -197,7 +273,8 @@ for i=1:length(error_data)
     % set definition domain of the position domain
     x_scale=-30:0.01:30;
     try
-        [PL_pgo,PL_gaussian,fft_time_all]=YanFun.cal_PL(x_lin_exd,pdf_pgo_exd,std_tsgo,scale_list,x_scale,params_pgo);
+        PHMI=1e-9;
+        [PL_pgo,PL_gaussian,fft_time_all]=YanFun.cal_PL(scale_list,x_scale,params_pgo,std_tsgo,PHMI);
         PL_pgo_list(i)=PL_pgo;
         PL_gaussian_list(i)=PL_gaussian;
         cal_time_list(i)=fft_time_all;

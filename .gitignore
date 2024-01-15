@@ -4,3 +4,6 @@ figure_paper/
 figures/
 *.zip
 *.mat
+*.fig
+*.gif
+*.eps

@@ -1,5 +1,5 @@
-clear all
-close all
+% clear all
+% close all
 seed=1234;
 YanFun=Yan_functions;
 %% explore T1_trans method (20230701)
@@ -227,7 +227,7 @@ YanFun=Yan_functions;
 
 %% 2023072 GPS data (from yihan) processing
 % % 设置文件夹路径和文件名
-% folder = 'Data/urban_dd_0816'; % 文件夹路径
+% folder = 'Data/mnav_zmp1_jan_20240105'; % 文件夹路径
 % filePattern = fullfile(folder, '*.csv'); % 文件名通配符
 % csvFiles = dir(filePattern); % 匹配文件夹中所有符合通配符的 CSV 文件
 % 
@@ -240,8 +240,8 @@ YanFun=Yan_functions;
 % % 合并所有数据表格为一个大数据表格
 % bigTable = vertcat(data{:});
 % % 设置文件名和文件路径
-% filename = 'merged_urban_dd.csv'; % 新文件名
-% folder = 'Data/urban_dd_0816'; % 新文件保存路径
+% filename = 'merged_Ref_Jan.csv'; % 新文件名
+% folder = 'Data/mnav_zmp1_jan_20240105'; % 新文件保存路径
 % fullPath = fullfile(folder, filename);
 % 
 % % 保存表格为 CSV 文件
@@ -403,6 +403,671 @@ YanFun=Yan_functions;
 % set(A,'FontSize',12)
 % set(gca, 'FontSize', 12,'FontName', 'Times New Roman');
 
+%% model all ele_bin for Ref data (20240102)
+% YanFun=Yan_functions;
+% seed=1234;
+% gmm_cells=cell(0);
+% tsgo_cells=cell(0);
+% pgo_cells=cell(0);
+% inflate_cells=cell(0);
+% i=1;
+% ele_start_list=15:5:75;
+% for ele_start=15:5:75
+%     try
+%         % load Data
+%         [Xdata,x_lin,pdf_data]=YanFun.load_RefDD('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat',ele_start,5);
+% %         [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD('Data/urban_dd_20240104/mergeurbandd.mat',30,50);% use all data for fitting
+% %         [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+%         pdf_emp = ksdensity(Xdata,x_lin);
+%         cdf_emp=cumtrapz(pdf_emp);
+%         cdf_emp=cdf_emp*(x_lin(2)-x_lin(1));
+%     
+%         [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+%         counts=length(x_lin);
+%         % fit gmm
+%         gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
+%         % Two-step Gaussian overbound (zero-mean)
+%         [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin);
+%         param_tsgo = std_tsgo;
+%         % Principal Gaussian overbound (zero-mean)
+%         inflate_core=1; inflate_tail=1; thr=0.7;
+%         gmm_dist_inflate=YanFun.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
+%         [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
+%         % store 
+%         gmm_cells{i}=gmm_dist_raw;
+%         tsgo_cells{i}=param_tsgo;
+%         pgo_cells{i}=params_pgo;
+%         inflate_cells{1,1}=inflate_core;
+%         inflate_cells{2,1}=inflate_tail;
+%         inflate_cells{3,1}=thr;
+%         
+% %         close all
+% %         % show pdf
+% %         figure
+% %         subplot(1,2,1)
+% %         % plot(x_lin,pdf_data,'k','LineWidth',2);
+% %         histogram(Xdata,'normalization','pdf')
+% %         hold on
+% %         plot(x_lin,pdf_emp,'k--','LineWidth',2);
+% %         plot(x_lin,pdf_tsgo,'r','LineWidth',2);
+% %         plot(x_lin,pdf_pgo,'g','LineWidth',2);
+% %         xlabel('Error','FontSize',12);
+% %         ylabel('PDF','FontSize',12);
+% %         A = legend('sample dist.','emp dist.','two-step','Principal Gaussian');
+% %         set(A,'FontSize',12)
+% %         % show cdf
+% %         subplot(1,2,2)
+% %         plot(x_lin_ecdf,ecdf_data,'k','LineWidth',2);
+% %         hold on
+% %         plot(x_lin,cdf_emp,'k--','LineWidth',2);
+% %         plot(x_lin,cdf_tsgo,'r','LineWidth',2);
+% %         plot(x_lin,cdf_pgo,'g','LineWidth',2);
+% %         xlabel('Error','FontSize',12);
+% %         ylabel('CDF','FontSize',12);
+% %         A = legend('sample dist.','emp dist.','two-step','Principal Gaussian');
+% %         set(A,'FontSize',12)
+% %         
+% %         % log scale cdf (left side)
+% %         figure;
+% %         h1=semilogy(x_lin_ecdf,ecdf_data,'k+','LineWidth',1,'MarkerSize', 4);
+% %         hold on
+% %         h21=semilogy(x_lin,cdf_tsgo,'g','LineWidth',2);
+% %         h5=semilogy(x_lin,cdf_pgo,'bd-','LineWidth',1,'MarkerSize', 4,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
+% %         xlim([min(x_lin)*1.2,max(x_lin)*0.5])
+% %         xlabel('Error (m)');
+% %         ylabel('CDF (log scale)');
+% %         set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% %         A = legend([h1,h21,h5],'Sample dist.','Gaussian','Principal Gaussian');
+% %         set(A,'FontSize',13.5)
+% %         grid on
+% %         
+% %         
+% %         % log scale cdf (right side)
+% %         figure;
+% %         h1=semilogy(x_lin_ecdf,1-ecdf_data,'k+','LineWidth',1,'MarkerSize', 4);
+% %         hold on
+% %         h24=semilogy(x_lin,1-cdf_tsgo,'g','LineWidth',2);
+% %         h5=semilogy(x_lin,1-cdf_pgo,'bd-','LineWidth',1,'MarkerSize', 4,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
+% %         xlim([min(x_lin)*0.5,max(x_lin)*1.2])
+% %         xlabel('Error (m)');
+% %         ylabel('CCDF (log scale)');
+% %         set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% %         A = legend([h1,h24,h5],'Sample dist.','Gaussian','Principal Gaussian');
+% %         set(A,'FontSize',13.5)
+% %         grid on
+% %         aa=0;
+%     catch
+%         aa=0;
+%     end
+%     i=i+1;
+% end
+% save('ref_overbounding',"gmm_cells","tsgo_cells","pgo_cells","ele_start_list","inflate_cells")
+
+%% 20240102 WLS+detection - urban
+% load('Data/urban_dd_20240104/mergeurbandd.mat');
+% load('urban_overbounding.mat');
+% tData_sorted = sortrows(mergedurbandd,1);
+% all_epoches = sort(unique(tData_sorted.datetime));
+% ele_start=ele_start_list(1);
+% ele_step = ele_start_list(2)-ele_start_list(1);
+% % init detection matrix
+% detec_mat=zeros(length(all_epoches),3);
+% time_jk_list=[];
+% time_ss_list=[];
+% for i=1:length(all_epoches)
+%     epoch = all_epoches(i);
+%     % select epoch
+%     filter_date= (tData_sorted.datetime==epoch);
+%     Xdata_raw=tData_sorted(filter_date,:);
+%     % select eligeble ele and snr for WLS
+%     % (yihan's filter method)
+%     filter_ele = (Xdata_raw.U2I_Elevation>30 & Xdata_raw.U2M_Elevation>30 & Xdata_raw.R2I_Elevation>30 & Xdata_raw.R2M_Elevation>30);
+%     filter_snr = (Xdata_raw.U2I_SNR>40 & Xdata_raw.U2M_SNR>40 & Xdata_raw.R2I_SNR>40 & Xdata_raw.R2M_SNR>40);
+%     Xdata=Xdata_raw(filter_ele&filter_snr,:);
+%     % meas
+%     meas = Xdata.double_differenced_pseudorange;
+%     % find ele bin
+%     ele_list = Xdata.U2I_Elevation;
+%     bin_list = ceil((ele_list-ele_start)/ele_step);
+%     
+%     % sat position
+%     m_sv_pos = [Xdata.master_x,Xdata.master_y,Xdata.master_z];
+%     s_sv_pos = [Xdata.target_x,Xdata.target_y,Xdata.target_z];
+%     % other info.
+%     init_state=zeros(3,1);
+%     GTusr_xyz = [-2418235.676841056, 5386096.899553243, 2404950.408609563];
+%     ref_xyz = [-2414266.9197, 5386768.9868, 2407460.0314];
+% %     % WLS solution
+% %     if size(s_sv_pos,1)>=3
+% %         [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_sigma, m_sv_pos,s_sv_pos,ref_xyz);
+% %         error_list(i)=ErrorECEF;
+% %     else
+% %         error_list(i)=-1;
+% %     end
+% %     time_list(i)=Xdata.gps_week(1) * 604800.0 + Xdata.gps_Sec(1) + 315964800.0 + 19.0;
+% 
+%     % detection and positioning
+%     if size(s_sv_pos,1)>=4
+%         % sigma construction 
+%         tsgo_meas_sigma=[];
+%         pgo_meas_sigma=[];
+%         pgo_current_cells=cell(0);
+%         for ii=1:length(bin_list)
+%             bin=bin_list(ii);
+%             try
+%                 % sigma of two-step Gaussian overbound
+%                 tsgo_params = tsgo_cells{bin};
+%                 tsgo_meas_sigma(ii,1)=tsgo_params;
+%                 % sigma of PGO
+%                 pgo_params = pgo_cells{bin};
+%                 pgo_meas_sigma(ii,1)=sqrt(pgo_params.p1*pgo_params.sigma1^2+(1-pgo_params.p1)*pgo_params.sigma2^2);
+%                 pgo_current_cells{ii}=pgo_params;
+%             catch
+%                 tsgo_meas_sigma(ii,1) = 1;
+%                 pgo_meas_sigma(ii,1) = 1;
+%             end
+%         end
+%         % simulate failure
+%         inject_bias=200;
+%         meas(1)=meas(1)+inject_bias;
+%         % detection and positioning
+%         t_start=tic;
+%         is_detect_jackknife = jackknife_detector(GTusr_xyz,meas,pgo_meas_sigma,m_sv_pos,s_sv_pos,ref_xyz,pgo_current_cells,"PGO");
+%         time_jk_list(end+1)=toc(t_start);
+%         t_start2=tic;
+%         is_detect_ss        = ss_detector(GTusr_xyz,meas,tsgo_meas_sigma,m_sv_pos,s_sv_pos,ref_xyz);
+%         time_ss_list(end+1)=toc(t_start2);
+%         detec_mat(i,:)=[is_detect_jackknife,is_detect_ss,0];
+%     else
+%         % invalid detection
+%         detec_mat(i,:)=[0,0,-1];
+%     end
+% end
+% % figure
+% % scatter(1:length(all_epoches),detec_mat(:,1))
+% % hold on
+% % scatter(1:length(all_epoches),detec_mat(:,2),'*')
+% % legend('Jackknife','Solution separation')
+% % 
+% % total_epochs=size(detec_mat,1);
+% % invalid_epochs=abs(sum(detec_mat(:,3)));
+% % Pdec_jackknife = sum(detec_mat(:,1))/(total_epochs-invalid_epochs)
+% % Pdec_ss = sum(detec_mat(:,2))/(total_epochs-invalid_epochs)
+
+%% Re-Check the calculation of DD error from yihan 20240104
+% load('Data/urban_dd_20240104/mergeurbandd.mat');
+% m_sv_pos = [mergedurbandd.master_x,mergedurbandd.master_y,mergedurbandd.master_z];
+% s_sv_pos = [mergedurbandd.target_x,mergedurbandd.target_y,mergedurbandd.target_z];
+% % ref_xyz = [-2414266.9197, 5386768.9868, 2407460.0314];
+% % GTusr_xyz = [-2418235.676841056, 5386096.899553243, 2404950.408609563];
+% ref_xyz =[-254127.011,-4531607.048,4466509.757]; % MNAV ref station
+% GTusr_xyz =[-249978.306,-4539297.200,4458954.757]; % ZMP1 ref station
+% true_geo = (sqrt(sum((m_sv_pos-ref_xyz).*(m_sv_pos-ref_xyz),2)) - sqrt(sum((m_sv_pos-GTusr_xyz).*(m_sv_pos-GTusr_xyz),2))) ....
+%             -(sqrt(sum((s_sv_pos-ref_xyz).*(s_sv_pos-ref_xyz),2)) - sqrt(sum((s_sv_pos-GTusr_xyz).*(s_sv_pos-GTusr_xyz),2)));
+% 
+% rho_u2m = mergedurbandd.user2master_pseudorange;
+% rho_u2s = mergedurbandd.user2target_pseudorange;
+% rho_r2m = mergedurbandd.ref2master_pseudorange;
+% rho_r2s = mergedurbandd.ref2target_pseudorange;
+% dd_meas = (rho_u2m-rho_r2m) - (rho_u2s-rho_r2s);
+% dd_meas = dd_meas*(-1);
+% 
+% dd_error = true_geo-dd_meas;
+% 
+% compare_data = [mergedurbandd.double_differenced_true_geometric_range - true_geo, ...
+%                mergedurbandd.double_differenced_pseudorange - dd_meas,...
+%                mergedurbandd.doubledifferenced_pseudorange_error - dd_error];
+
+%% 20240106 WLS+detection - ref
+% load('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat');
+% load('ref_overbounding_correction.mat');
+% mergedRefJan_select = mergedRefJan(mergedRefJan.datetime>="2020-01-01" & mergedRefJan.datetime<"2020-01-02",:);
+% tData_sorted = sortrows(mergedRefJan_select,1);
+% all_epoches = sort(unique(tData_sorted.datetime));
+% ele_start=ele_start_list(1);
+% ele_step = ele_start_list(2)-ele_start_list(1);
+% % init detection matrix
+% detec_mat=zeros(length(all_epoches),3);
+% time_jk_list=[];
+% time_ss_list=[];
+% % 1914
+% for i=1:length(all_epoches)
+%     epoch = all_epoches(i);
+%     % select epoch
+%     filter_date= (tData_sorted.datetime==epoch);
+%     Xdata_raw=tData_sorted(filter_date,:);
+%     % select eligeble ele and snr for WLS (do not apply selection for reference station data)
+%     Xdata=Xdata_raw;
+%     % meas
+%     meas = Xdata.double_differenced_pseudorange;
+%     % find ele bin
+%     ele_list = Xdata.U2I_Elevation;
+%     bin_list = ceil((ele_list-ele_start)/ele_step);
+%    
+%     % sat position
+%     m_sv_pos = [Xdata.master_x,Xdata.master_y,Xdata.master_z];
+%     s_sv_pos = [Xdata.target_x,Xdata.target_y,Xdata.target_z];
+%     % other info.
+%     init_state=zeros(3,1);
+%     ref_xyz =[-254127.011,-4531607.048,4466509.757]; % MNAV ref station
+%     GTusr_xyz =[-249978.306,-4539297.200,4458954.757]; % ZMP1 ref station
+% %     % WLS solution
+% %     if size(s_sv_pos,1)>=3
+% %         [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_sigma, m_sv_pos,s_sv_pos,ref_xyz);
+% %         error_list(i)=ErrorECEF;
+% %     else
+% %         error_list(i)=-1;
+% %     end
+% %     time_list(i)=Xdata.gps_week(1) * 604800.0 + Xdata.gps_Sec(1) + 315964800.0 + 19.0;
+% 
+%     % detection and positioning
+%     if i==1914
+%         detec_mat(i,:)=[-2,-2,-1]; % unsolved problem?
+%         time_jk_list(end+1)=-1;
+%         time_ss_list(end+1)=-1;
+%         continue
+%     end
+%     if size(s_sv_pos,1)>=4 
+%         % sigma construction 
+%         tsgo_meas_sigma=[];
+%         pgo_meas_sigma=[];
+%         pgo_current_cells=cell(0);
+%         for ii=1:length(bin_list)
+%             bin=bin_list(ii);
+%             try
+%                 % sigma of two-step Gaussian overbound
+%                 tsgo_params = tsgo_cells{bin};
+%                 tsgo_meas_sigma(ii,1)=tsgo_params;
+%                 % sigma of PGO
+%                 pgo_params = pgo_cells{bin};
+%                 pgo_meas_sigma(ii,1)=sqrt(pgo_params.p1*pgo_params.sigma1^2+(1-pgo_params.p1)*pgo_params.sigma2^2);
+%                 pgo_current_cells{ii}=pgo_params;
+%             catch
+%                 tsgo_meas_sigma(ii,1) = 1;
+%                 pgo_meas_sigma(ii,1) = 1;
+%             end
+%         end
+%         % simulate failure
+%         inject_bias=1;
+%         meas(1)=meas(1)+inject_bias;
+%         % detection and positioning
+%         t_start=tic;
+%         is_detect_jackknife = jackknife_detector(GTusr_xyz,meas,pgo_meas_sigma,m_sv_pos,s_sv_pos,ref_xyz,pgo_current_cells,"PGO");
+%         time_jk_list(end+1)=toc(t_start);
+%         t_start2=tic;
+%         is_detect_ss        = ss_detector(GTusr_xyz,meas,tsgo_meas_sigma,m_sv_pos,s_sv_pos,ref_xyz);
+%         time_ss_list(end+1)=toc(t_start2);
+%         detec_mat(i,:)=[is_detect_jackknife,is_detect_ss,0];
+%     else
+%         % invalid detection
+%         detec_mat(i,:)=[0,0,-1];
+%         time_jk_list(end+1)=-1;
+%         time_ss_list(end+1)=-1;
+%     end
+% end
+% figure
+% scatter(1:length(all_epoches),detec_mat(:,1))
+% hold on
+% scatter(1:length(all_epoches),detec_mat(:,2),'*')
+% legend('Jackknife','Solution separation')
+% 
+% total_epochs=size(detec_mat,1);
+% invalid_epochs=abs(sum(detec_mat(:,3)));
+% % delete invalid epochs
+% detec_mat_valid=detec_mat((detec_mat(:,3)~=-1),:);
+% % detect rate
+% valid_epochs=size(detec_mat_valid,1);
+% Pdec_jackknife = sum(detec_mat(:,1))/valid_epochs
+% Pdec_ss = sum(detec_mat(:,2))/valid_epochs
+
+%% 20240108 visualize detection performance of SS and JK 
+% JK_list_show=zeros(10,1);
+% SS_list_show=zeros(10,1);
+% for k=1:10
+%     file=['dd_ref_bias',num2str(k)];
+%     load(file)
+% %     % delete invalid epochs
+% %     detec_mat_valid=detec_mat((detec_mat(:,3)~=-1),:);
+% %     % detect rate
+% %     valid_epochs=size(detec_mat_valid,1);
+% %     Pdec_jackknife = sum(detec_mat(:,1))/valid_epochs;
+% %     Pdec_ss = sum(detec_mat(:,2))/valid_epochs;
+%     JK_list_show(k)=Pdec_jackknife;
+%     SS_list_show(k)=Pdec_ss;
+% end
+% plot(JK_list_show*100,'b-o')
+% hold on
+% plot(SS_list_show*100,'r-*')
+
+
+%% 20240114 model all ele_bin for Ref CHTI
+% YanFun=Yan_functions;
+% seed=1234;
+% gmm_cells=cell(0);
+% tsgo_cells=cell(0);
+% pgo_cells=cell(0);
+% inflate_cells=cell(0);
+% i=1;
+% ele_start_list=15:5:85;
+% for ele_start=80:5:85
+%     try
+%         % load Data
+%         [Xdata,x_lin,pdf_data]=YanFun.load_RefSPP('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat',ele_start,5);
+%         pdf_emp = ksdensity(Xdata,x_lin);
+%         cdf_emp=cumtrapz(pdf_emp);
+%         cdf_emp=cdf_emp*(x_lin(2)-x_lin(1));
+%     
+%         [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+%         counts=length(x_lin);
+%         % fit gmm
+%         gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
+%         % Two-step Gaussian overbound (zero-mean)
+%         [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin);
+%         param_tsgo = std_tsgo;
+%         % Principal Gaussian overbound (zero-mean)
+%         inflate_core=1; inflate_tail=1; thr=0.7;
+%         gmm_dist_inflate=YanFun.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
+%         [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
+%         % store 
+%         gmm_cells{i}=gmm_dist_raw;
+%         tsgo_cells{i}=param_tsgo;
+%         pgo_cells{i}=params_pgo;
+%         inflate_cells{1,i}=inflate_core;
+%         inflate_cells{2,i}=inflate_tail;
+%         inflate_cells{3,i}=thr;
+%         
+% %         close all
+% %         % show pdf
+% %         figure
+% %         subplot(1,2,1)
+% %         % plot(x_lin,pdf_data,'k','LineWidth',2);
+% %         histogram(Xdata,'normalization','pdf')
+% %         hold on
+% %         plot(x_lin,pdf_emp,'k--','LineWidth',2);
+% %         plot(x_lin,pdf_tsgo,'r','LineWidth',2);
+% %         plot(x_lin,pdf_pgo,'g','LineWidth',2);
+% %         xlabel('Error','FontSize',12);
+% %         ylabel('PDF','FontSize',12);
+% %         A = legend('sample dist.','emp dist.','two-step','Principal Gaussian');
+% %         set(A,'FontSize',12)
+% %         % show cdf
+% %         subplot(1,2,2)
+% %         plot(x_lin_ecdf,ecdf_data,'k','LineWidth',2);
+% %         hold on
+% %         plot(x_lin,cdf_emp,'k--','LineWidth',2);
+% %         plot(x_lin,cdf_tsgo,'r','LineWidth',2);
+% %         plot(x_lin,cdf_pgo,'g','LineWidth',2);
+% %         xlabel('Error','FontSize',12);
+% %         ylabel('CDF','FontSize',12);
+% %         A = legend('sample dist.','emp dist.','two-step','Principal Gaussian');
+% %         set(A,'FontSize',12)
+% %         
+% %         % log scale cdf (left side)
+% %         figure;
+% %         h1=semilogy(x_lin_ecdf,ecdf_data,'k+','LineWidth',1,'MarkerSize', 4);
+% %         hold on
+% %         h21=semilogy(x_lin,cdf_tsgo,'g','LineWidth',2);
+% %         h5=semilogy(x_lin,cdf_pgo,'bd-','LineWidth',1,'MarkerSize', 4,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
+% %         xlim([min(x_lin)*1.2,max(x_lin)*0.5])
+% %         xlabel('Error (m)');
+% %         ylabel('CDF (log scale)');
+% %         set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% %         A = legend([h1,h21,h5],'Sample dist.','Gaussian','Principal Gaussian');
+% %         set(A,'FontSize',13.5)
+% %         grid on
+% %         
+% %         
+% %         % log scale cdf (right side)
+% %         figure;
+% %         h1=semilogy(x_lin_ecdf,1-ecdf_data,'k+','LineWidth',1,'MarkerSize', 4);
+% %         hold on
+% %         h24=semilogy(x_lin,1-cdf_tsgo,'g','LineWidth',2);
+% %         h5=semilogy(x_lin,1-cdf_pgo,'bd-','LineWidth',1,'MarkerSize', 4,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
+% %         xlim([min(x_lin)*0.5,max(x_lin)*1.2])
+% %         xlabel('Error (m)');
+% %         ylabel('CCDF (log scale)');
+% %         set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% %         A = legend([h1,h24,h5],'Sample dist.','Gaussian','Principal Gaussian');
+% %         set(A,'FontSize',13.5)
+% %         grid on
+% %         aa=0;
+%     catch
+%         aa=0;
+%     end
+%     i=i+1;
+% end
+% save('CHTI_overbounding',"gmm_cells","tsgo_cells","pgo_cells","ele_start_list","inflate_cells")
+
+%% 20240114 WLS+detection - ref CHTI
+% load('Data/cors_CHTI_Jan/mergedCHTIJan.mat');
+% load('ref_overbounding_correction.mat');
+% mergedRefJan_select = mergedRefJan(mergedRefJan.datetime>="2020-01-01" & mergedRefJan.datetime<"2020-01-02",:);
+% tData_sorted = sortrows(mergedRefJan_select,1);
+% all_epoches = sort(unique(tData_sorted.datetime));
+% ele_start=ele_start_list(1);
+% ele_step = ele_start_list(2)-ele_start_list(1);
+% % init detection matrix
+% detec_mat=zeros(length(all_epoches),3);
+% time_jk_list=[];
+% time_ss_list=[];
+% % 1914
+% for i=1:length(all_epoches)
+%     epoch = all_epoches(i);
+%     % select epoch
+%     filter_date= (tData_sorted.datetime==epoch);
+%     Xdata_raw=tData_sorted(filter_date,:);
+%     % select eligeble ele and snr for WLS (do not apply selection for reference station data)
+%     Xdata=Xdata_raw;
+%     % meas
+%     meas = Xdata.double_differenced_pseudorange;
+%     % find ele bin
+%     ele_list = Xdata.U2I_Elevation;
+%     bin_list = ceil((ele_list-ele_start)/ele_step);
+%    
+%     % sat position
+%     m_sv_pos = [Xdata.master_x,Xdata.master_y,Xdata.master_z];
+%     s_sv_pos = [Xdata.target_x,Xdata.target_y,Xdata.target_z];
+%     % other info.
+%     init_state=zeros(3,1);
+%     ref_xyz =[-254127.011,-4531607.048,4466509.757]; % MNAV ref station
+%     GTusr_xyz =[-249978.306,-4539297.200,4458954.757]; % ZMP1 ref station
+% %     % WLS solution
+% %     if size(s_sv_pos,1)>=3
+% %         [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_sigma, m_sv_pos,s_sv_pos,ref_xyz);
+% %         error_list(i)=ErrorECEF;
+% %     else
+% %         error_list(i)=-1;
+% %     end
+% %     time_list(i)=Xdata.gps_week(1) * 604800.0 + Xdata.gps_Sec(1) + 315964800.0 + 19.0;
+% 
+%     % detection and positioning
+%     if i==1914
+%         detec_mat(i,:)=[-2,-2,-1]; % unsolved problem?
+%         time_jk_list(end+1)=-1;
+%         time_ss_list(end+1)=-1;
+%         continue
+%     end
+%     if size(s_sv_pos,1)>=4 
+%         % sigma construction 
+%         tsgo_meas_sigma=[];
+%         pgo_meas_sigma=[];
+%         pgo_current_cells=cell(0);
+%         for ii=1:length(bin_list)
+%             bin=bin_list(ii);
+%             try
+%                 % sigma of two-step Gaussian overbound
+%                 tsgo_params = tsgo_cells{bin};
+%                 tsgo_meas_sigma(ii,1)=tsgo_params;
+%                 % sigma of PGO
+%                 pgo_params = pgo_cells{bin};
+%                 pgo_meas_sigma(ii,1)=sqrt(pgo_params.p1*pgo_params.sigma1^2+(1-pgo_params.p1)*pgo_params.sigma2^2);
+%                 pgo_current_cells{ii}=pgo_params;
+%             catch
+%                 tsgo_meas_sigma(ii,1) = 1;
+%                 pgo_meas_sigma(ii,1) = 1;
+%             end
+%         end
+%         % simulate failure
+%         inject_bias=1;
+%         meas(1)=meas(1)+inject_bias;
+%         % detection and positioning
+%         t_start=tic;
+%         is_detect_jackknife = jackknife_detector(GTusr_xyz,meas,pgo_meas_sigma,m_sv_pos,s_sv_pos,ref_xyz,pgo_current_cells,"PGO");
+%         time_jk_list(end+1)=toc(t_start);
+%         t_start2=tic;
+%         is_detect_ss        = ss_detector(GTusr_xyz,meas,tsgo_meas_sigma,m_sv_pos,s_sv_pos,ref_xyz);
+%         time_ss_list(end+1)=toc(t_start2);
+%         detec_mat(i,:)=[is_detect_jackknife,is_detect_ss,0];
+%     else
+%         % invalid detection
+%         detec_mat(i,:)=[0,0,-1];
+%         time_jk_list(end+1)=-1;
+%         time_ss_list(end+1)=-1;
+%     end
+% end
+% figure
+% scatter(1:length(all_epoches),detec_mat(:,1))
+% hold on
+% scatter(1:length(all_epoches),detec_mat(:,2),'*')
+% legend('Jackknife','Solution separation')
+% 
+% total_epochs=size(detec_mat,1);
+% invalid_epochs=abs(sum(detec_mat(:,3)));
+% % delete invalid epochs
+% detec_mat_valid=detec_mat((detec_mat(:,3)~=-1),:);
+% % detect rate
+% valid_epochs=size(detec_mat_valid,1);
+% Pdec_jackknife = sum(detec_mat(:,1))/valid_epochs
+% Pdec_ss = sum(detec_mat(:,2))/valid_epochs
+
+
+function result = PGO_variance(pgo_params)
+    k=pgo_params.k;
+    cc=pgo_params.cc;
+    p1=pgo_params.p1;
+    sigma1=pgo_params.sigma1;
+    sigma2=pgo_params.sigma2;
+    xR2p = pgo_params.xR2p;
+    pi=3.141596;
+    % core part
+    core = (2/3)*cc*xR2p^3 + ...
+           sigma1*p1*(sigma1*erf(xR2p/(sqrt(2)*sigma1))-...
+           sqrt(2/pi)*xR2p*exp(-xR2p^2/(2*sigma1^2)));
+    
+    tail = -(k+1)*(p1-1)*...
+           (sqrt(pi/2)*sigma2^3*erfc(xR2p/(sqrt(2)*sigma2))+...
+           sigma2^2*xR2p*exp(-xR2p^2/(2*sigma2^2)))/(sqrt(2*pi)*sigma2);
+    tail = tail*2;
+    result = core + tail;
+end
+
+function is_detect=jackknife_detector(GTusr_xyz,meas,meas_sigma,m_sv_pos,s_sv_pos,ref_xyz,pgo_current_cells,ob_type)
+    is_detect=false;
+    init_state=zeros(3,1);
+    rho=-meas; % here is yihan's wrong operation，I need to correct it
+    n=length(rho);
+    Sigma=diag(meas_sigma.^2);
+    W=inv(Sigma);
+     % all-in-view solution
+    [eWLSSolution,prn_res,ErrorECEF,H,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_sigma, m_sv_pos,s_sv_pos,ref_xyz);
+    S=inv(H'*W*H)*H'*W;
+    
+    % subsolution
+    for i=1:n
+        meas_sub=meas; meas_sub(i,:)=[];
+        meas_sigma_sub=meas_sigma; meas_sigma_sub(i,:)=[];
+        m_sv_pos_sub=m_sv_pos; m_sv_pos_sub(i,:)=[];
+        s_sv_pos_sub=s_sv_pos; s_sv_pos_sub(i,:)=[];
+        [eWLSSolution_sub,prn_res_sub,ErrorECEF3d_sub,H_sub,eDeltaPos_sub,eDeltaPr_sub]=WeightedLeastSquareDD(GTusr_xyz, init_state, meas_sub, meas_sigma_sub, m_sv_pos_sub,s_sv_pos_sub,ref_xyz);
+        
+        % construct los vector for i-th meas
+        m_dGeoDistance = Euc_dis(m_sv_pos(i,:),eWLSSolution_sub');
+        s_dGeoDistance = Euc_dis(s_sv_pos(i,:),eWLSSolution_sub');
+        h_i =  [(eWLSSolution_sub(1)-m_sv_pos(i,1))/m_dGeoDistance - (eWLSSolution_sub(1)-s_sv_pos(i,1))/s_dGeoDistance, ...
+                (eWLSSolution_sub(2)-m_sv_pos(i,2))/m_dGeoDistance - (eWLSSolution_sub(2)-s_sv_pos(i,2))/s_dGeoDistance, ...]
+                (eWLSSolution_sub(3)-m_sv_pos(i,3))/m_dGeoDistance - (eWLSSolution_sub(3)-s_sv_pos(i,3))/s_dGeoDistance];
+
+        % predicted i-th meas
+        eDeltaPr_i_hat = h_i*eDeltaPos_sub;
+        % test statistic
+        rho_0=(Euc_dis(m_sv_pos(i,:),eWLSSolution_sub') - Euc_dis(m_sv_pos(i,:),ref_xyz))...
+               -(Euc_dis(s_sv_pos(i,:),eWLSSolution_sub') - Euc_dis(s_sv_pos(i,:),ref_xyz));
+    
+        t_i = (rho(i)-rho_0) - eDeltaPr_i_hat;
+        
+        % deriving distribution of Jacknife residual
+        Sigma_sub=diag(meas_sigma_sub.^2);
+        W_sub=inv(Sigma_sub);
+        S_sub=inv(H_sub'*W_sub*H_sub)*H_sub'*W_sub;
+        S_subEx=[S_sub(:,1:i-1), zeros(3,1), S_sub(:,i:end)];
+        if ob_type=="Gaussian"
+            % null distribution of t_i under Gaussain overbound
+            Sigma_t_i = h_i*S_subEx*Sigma*S_subEx'*h_i'+meas_sigma(i)^2;
+            % threhold
+            thr_i=sqrt(Sigma_t_i)*norminv(1-0.05/(2*n));
+        elseif ob_type=="PGO"
+            % extend t_i to non-Gaussian overbound
+            H_rec = [H_sub(1:i-1,:); h_i; H_sub(i:end,:)];
+            P_rec = H_rec*S_subEx;
+            IsP_rec = eye(n)-P_rec;
+            Isp_rec = IsP_rec(i,:); % i-th row of IsP_rec
+            % set definition domain of the t_i
+            x_scale=-10:0.01:10;
+            scale_list=Isp_rec';
+            PHMI=0.05/n;
+            addpath('../../N06_TAES/Matlab_PGO')
+            YanFun=Yan_functions();
+            % solve distribution and critical value of t_i
+            [PL_fake,~,fft_time_all]=YanFun.cal_PL_ex(scale_list,x_scale,[],pgo_current_cells,PHMI);
+            % threhold
+            thr_i=abs(PL_fake);
+        end
+        % detection
+        if abs(t_i)>thr_i
+            is_detect=true;
+        end
+    end  
+end
+
+
+function is_detect=ss_detector(GTusr_xyz,meas,meas_sigma,m_sv_pos,s_sv_pos,ref_xyz)
+    is_detect=false;
+    init_state=zeros(3,1);
+    rho=meas;
+    n=length(rho);
+    Sigma=diag(meas_sigma.^2);
+    W=inv(Sigma);
+    % all-in-view solution
+    [eWLSSolution,prn_res,ErrorECEF,H,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_sigma, m_sv_pos,s_sv_pos,ref_xyz);
+    lin_pos = eWLSSolution-eDeltaPos;
+    S=inv(H'*W*H)*H'*W;
+    s3=S(3,:);
+    % subsolution
+    for i=1:n
+        meas_sub=meas; meas_sub(i,:)=[];
+        meas_sigma_sub=meas_sigma; meas_sigma_sub(i,:)=[];
+        m_sv_pos_sub=m_sv_pos; m_sv_pos_sub(i,:)=[];
+        s_sv_pos_sub=s_sv_pos; s_sv_pos_sub(i,:)=[];
+        [eWLSSolution_sub,prn_res_sub,ErrorECEF3d_sub,H_sub,eDeltaPos_sub,eDeltaPr_sub]=WeightedLeastSquareDD(GTusr_xyz, init_state, meas_sub, meas_sigma_sub, m_sv_pos_sub,s_sv_pos_sub,ref_xyz);
+        lin_pos_sub = eWLSSolution_sub-eDeltaPos_sub;
+        % test statistic
+        d_i=eWLSSolution(3)-eWLSSolution_sub(3);
+        % null distribution of d_i
+        Sigma_sub=diag(meas_sigma_sub.^2);
+        W_sub=inv(Sigma_sub);
+        S_sub=inv(H_sub'*W_sub*H_sub)*H_sub'*W_sub;
+        S_subEx=[S_sub(:,1:i-1), zeros(3,1), S_sub(:,i:end)];
+        s3_i=S_subEx(3,:);
+        Sigma_d_i = (s3-s3_i)*Sigma*(s3-s3_i)';
+        % threhold
+        thr_i=sqrt(Sigma_d_i)*norminv(1-0.05/(2*n));
+        % detection
+        if abs(d_i)>thr_i
+            is_detect=true;
+        end
+    end  
+end
+
 function y=GaussPareto_cdf(data)
     y=zeros(size(data));
     for i=1:size(data,2)
@@ -449,4 +1114,10 @@ function y = nig_pdf(data)
         x=data(i);
         y(i) = nig_function(x,alpha,beta,delta,mu);
     end
+end
+
+
+function dis = Euc_dis(A,B)
+    % A, B is row vector
+    dis = sqrt((A-B)*(A-B)');
 end

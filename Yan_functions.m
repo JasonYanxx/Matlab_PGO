@@ -1,6 +1,8 @@
 function YanFun=Yan_functions
 YanFun.load_UrbanDD=@load_UrbanDD;
 YanFun.load_RefDD=@load_RefDD;
+YanFun.extend_CHTI=@extend_CHTI;
+YanFun.load_RefSPP=@load_RefSPP;
 YanFun.load_GNSS=@load_GNSS;
 YanFun.load_GMM=@load_GMM;
 YanFun.load_GMM_bias=@load_GMM_bias;
@@ -17,6 +19,7 @@ YanFun.distSelfConv=@distSelfConv;
 YanFun.get_conv=@get_conv;
 YanFun.compareConvOverbound=@compareConvOverbound;
 YanFun.cal_PL=@cal_PL;
+YanFun.cal_PL_ex=@cal_PL_ex;
 YanFun.FDE_Gaussian=@FDE_Gaussian;
 YanFun.FDE_BayesGMM_seperate=@FDE_BayesGMM_seperate;
 YanFun.FDE_BayesGMM_union=@FDE_BayesGMM_union;
@@ -30,15 +33,25 @@ YanFun.cal_omega=@cal_omega;
 YanFun.binary_search=@binary_search;
 YanFun.inflate_GMM=@inflate_GMM;
 YanFun.customrand=@customrand;
+YanFun.nig_pdf=@nig_pdf;
 YanFun.matrix_ecef2enu=@matrix_ecef2enu;
 end
 
 
 %% Generate Urban data
-function [Xdata,x_lin,pdf_data]=load_UrbanDD()
-    load('Data/urban_dd_0816/mergeurbandd.mat');
-    % select: ele(30~35)
-    filter_ele=(mergedurbandd.U2I_Elevation>=30 & mergedurbandd.U2I_Elevation<=35); 
+function [Xdata,x_lin,pdf_data]=load_UrbanDD(file,ele_start,ele_step)
+    
+    if nargin==0
+        load('Data/urban_dd_0816/mergeurbandd.mat');
+        % select: ele(30~35)   
+        filter_ele=(mergedurbandd.U2I_Elevation>=30 & mergedurbandd.U2I_Elevation<=35); 
+%         % select: ele(60~65)
+%         filter_ele=(mergedRefOnemonth.U2I_Elevation>=60 & mergedRefOnemonth.U2I_Elevation<=65); 
+    else
+        load(file);
+        filter_ele=(mergedurbandd.U2I_Elevation>=ele_start & mergedurbandd.U2I_Elevation<=ele_start+ele_step); 
+    end
+    
     % select: err(-15~15)
     filter_err=(mergedurbandd.doubledifferenced_pseudorange_error>=-15 & mergedurbandd.doubledifferenced_pseudorange_error<=15); 
     filter_SNR=(mergedurbandd.U2I_SNR>=40); 
@@ -52,14 +65,20 @@ function [Xdata,x_lin,pdf_data]=load_UrbanDD()
     cdf_data=cdf_data*(x_lin(2)-x_lin(1));
 end
 
-%% Generate CORS data
-function [Xdata,x_lin,pdf_data]=load_RefDD()
-    load('Data/mnav_zmp1_jan/mergedRefJan.mat');
-    mergedRefOnemonth=mergedRefJan;
-    % select: ele(30~35)
-    filter_ele=(mergedRefOnemonth.U2I_Elevation>=30 & mergedRefOnemonth.U2I_Elevation<=35); 
-%     % select: ele(60~65)
-%     filter_ele=(mergedRefOnemonth.U2I_Elevation>=60 & mergedRefOnemonth.U2I_Elevation<=65); 
+%% Generate DGNSS CORS data
+function [Xdata,x_lin,pdf_data]=load_RefDD(file, ele_start,ele_step)
+    if nargin==0
+        load('Data/urban_dd_0816/mergeurbandd.mat');
+        mergedRefOnemonth=mergedRefJan;
+        % select: ele(30~35)   
+        filter_ele=(mergedRefOnemonth.U2I_Elevation>=30 & mergedRefOnemonth.U2I_Elevation<=35); 
+        %     % select: ele(60~65)
+    %     filter_ele=(mergedRefOnemonth.U2I_Elevation>=60 & mergedRefOnemonth.U2I_Elevation<=65); 
+    else
+        load(file);
+        mergedRefOnemonth=mergedRefJan;
+        filter_ele=(mergedRefOnemonth.U2I_Elevation>=ele_start & mergedRefOnemonth.U2I_Elevation<=ele_start+ele_step); 
+    end
     % select: err(-15~15)
     filter_err=(mergedRefOnemonth.doubledifferenced_pseudorange_error>=-15 & mergedRefOnemonth.doubledifferenced_pseudorange_error<=15); 
 
@@ -73,6 +92,83 @@ function [Xdata,x_lin,pdf_data]=load_RefDD()
     x_lin = linspace(-lim, lim, Nsamples);
     pdf_data = ksdensity(Xdata,x_lin);
     [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+end
+
+%% Generate SPP CORS data
+function [Xdata,x_lin,pdf_data]=load_RefSPP(file, ele_start,ele_step)
+    if nargin==0
+        load('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat');
+        mergedRefOnemonth=mergedCHTIJan_exd;
+        % select: ele(30~35)   
+        filter_ele=(mergedRefOnemonth.ele>=30*3.1415/180 & mergedRefOnemonth.ele<=35*3.1415/180); 
+    else
+        load(file);
+        mergedRefOnemonth=mergedCHTIJan_exd;
+        filter_ele=(mergedRefOnemonth.ele>=ele_start*3.1415/180 & mergedRefOnemonth.ele<=(ele_start+ele_step)*3.1415/180); 
+    end
+  
+    % select: err(-15~15)
+    filter_err=(mergedRefOnemonth.residual>=-15 & mergedRefOnemonth.residual<=15); 
+    
+    % selec: date
+    % 2023-01-25:1674604800~1674691170
+    % 2023-01-28:1674864000~1674950370
+    filter_day25=(mergedRefOnemonth.gps_time>=1674604800 & mergedRefOnemonth.gps_time<=1674691170);
+    filter_day28=(mergedRefOnemonth.gps_time>=1674864000 & mergedRefOnemonth.gps_time<=1674950370);
+    filter_dayuse= ~(filter_day25 | filter_day28);
+    
+    mergedRefSel = mergedRefOnemonth(filter_dayuse & filter_ele & filter_err,:);
+    Xdata=mergedRefOnemonth.residual(filter_dayuse & filter_ele & filter_err);
+    
+    Nsamples=length(Xdata);
+    if Nsamples<15000
+        Nsamples=15000;
+    end
+    lim=max(-min(Xdata),max(Xdata));
+    x_lin = linspace(-lim, lim, Nsamples);
+    pdf_data = ksdensity(Xdata,x_lin);
+    [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+end
+
+
+function obs_exd_all=extend_CHTI(on_data)
+CLIGHT=3e8;
+recPos=[-43.735473315,-176.617116049,75.6896];% CHTI: lat lon alt
+all_epochs = sort(unique(on_data.gps_time));
+for i=1:length(all_epochs)
+    epoch_cur=all_epochs(i);
+    obs_cur = on_data(on_data.gps_time==epoch_cur,:);
+    obs_sel=obs_cur(obs_cur.ele>=15*3.1415/180,:);
+    num_sel = height(obs_sel);
+    obs_remain=obs_cur(obs_cur.ele<15*3.1415/180,:);
+    num_remain=height(obs_remain);
+    % estimate receier clock bias with GTxyz
+    warr=[];
+    for ii=1:num_sel
+        w=1/obs_sel.sigma(ii)^2;
+        warr(1,ii)=w;
+    end
+    warr=warr/sum(warr);
+    rec_dt = warr*(obs_sel.cor_pseudo-obs_sel.range)/CLIGHT;
+
+    % calculate residual
+    res = obs_sel.cor_pseudo-obs_sel.range-rec_dt*CLIGHT;
+    
+    % extend 
+    obs_sel_exd = addvars(obs_sel, rec_dt*ones(num_sel,1), res,...
+        'NewVariableNames',{'rec_dt', 'residual'});
+    obs_remain_exd = addvars(obs_remain, NaN(num_remain,1), NaN(num_remain,1),...
+        'NewVariableNames',{'rec_dt', 'residual'});
+
+    % save all obs_cur_exd
+    if i==1
+        obs_exd_all=vertcat(obs_sel_exd, obs_remain_exd);
+    else
+        tmp = vertcat(obs_sel_exd, obs_remain_exd);
+        obs_exd_all = vertcat(obs_exd_all, tmp);
+    end
+end
+
 end
 
 function [Xdata,x_lin,pdf_data,cdf_data]=load_GNSS()
@@ -279,10 +375,6 @@ function [params,pdf_overbound,cdf_overbound]=Principal_Gaussian_bound(Xdata,x_l
         s2_list(j)=s2;
     end
 
-%     plot(x,s1_list);
-%     hold on
-%     plot(x,s2_list);
-
     % 计算 s1 和 s2 的分位点
     s1_half=s1_list(1:round(Nsamples/2));
     idx_xL1p=binary_search(s1_half, max(min(s1_list),thr*max(s1_list)));
@@ -319,6 +411,8 @@ function [params,pdf_overbound,cdf_overbound]=Principal_Gaussian_bound(Xdata,x_l
     params.gmm_dist=gmm_dist;
     params.xL2p=xL2p;
     params.xR2p=xR2p;
+    params.s1_list=s1_list;
+    params.s2_list=s2_list;
 
     pdf_overbound=pdf_piece_fun;
     cdf_overbound=cdf_piece_fun_join;
@@ -422,32 +516,32 @@ end
 % convolution of two distribution 
 function [pdf_conv,x_conv,conv_t]=distConv_org(x1,x2,pdf_dist1,pdf_dist2,method)
 % https://ww2.mathworks.cn/matlabcentral/answers/1440944-request-for-help-computing-convolution-of-random-variables-via-fft
-    % define output length
-    N1 = length(pdf_dist1);       
-    N2 = length(pdf_dist2);  
-    N=N1+N2-1;
-    % define delta_x (x1 and x2 should have the same delta_x)
-    dx = x1(2) - x1(1);
-    
-    % convolution
-    if method=="fft"
-        tic;
-        fft_pdf1=fft(pdf_dist1,N);
-        fft_pdf2=fft(pdf_dist2,N);
-        pdf_fftconv = ifft(fft_pdf1 .* fft_pdf2);
-        conv_t=toc;
-        pdf_conv=pdf_fftconv*dx; % multiple dx
-    elseif method=="direct"
-        tic;
-        pdf_conv=conv(pdf_dist1,pdf_dist2)*dx;
-        conv_t=toc;    
-    end
-    
-    min_x=min(x1)+min(x2);
-    max_x=max(x1)+max(x2);
+% define output length
+N1 = length(pdf_dist1);       
+N2 = length(pdf_dist2);  
+N=N1+N2-1;
+% define delta_x (x1 and x2 should have the same delta_x)
+dx = x1(2) - x1(1);
+
+% convolution
+if method=="fft"
+    tic;
+    fft_pdf1=fft(pdf_dist1,N);
+    fft_pdf2=fft(pdf_dist2,N);
+    pdf_fftconv = ifft(fft_pdf1 .* fft_pdf2);
+    conv_t=toc;
+    pdf_conv=pdf_fftconv*dx; % multiple dx
+elseif method=="direct"
+    tic;
+    pdf_conv=conv(pdf_dist1,pdf_dist2)*dx;
+    conv_t=toc;    
+end
+
+min_x=min(x1)+min(x2);
+max_x=max(x1)+max(x2);
 %     x_fftconv=min_x:dx:max_x; % bug: not enough number
-    x_conv=linspace(min_x,max_x,N);
-    end
+x_conv=linspace(min_x,max_x,N);
+end
 
 % self-convolution (multiple times)
 function [pdf_conv,ts_all]=distSelfConv(x,pdf_dist,num_conv,method)
@@ -490,7 +584,7 @@ function compareConvOverbound(x,pdf_ob,pdf_data,num_conv)
 end
 
 %% Protection level
-function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(x_lin,pdf_pgo,std_tsgo,scale_list,x_scale,params_pgo)
+function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(scale_list,x_scale,std_tsgo,params_pgo,PHMI)
     YanFun=Yan_functions;
     if scale_list(1)==0
         return
@@ -524,7 +618,7 @@ function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(x_lin,pdf_pgo,std_tsgo,scale_l
     cum_p=0;
     PL_pgo=999; % cannot solve PL_pgo
     for i=1:length(xaxi_list)
-        if cum_p>sum(pdf_obp)*1e-9/2
+        if cum_p>sum(pdf_obp)*PHMI/2
             PL_pgo=xaxi_list(i);
             break
         end
@@ -533,13 +627,78 @@ function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(x_lin,pdf_pgo,std_tsgo,scale_l
     if PL_pgo==999
         error("PL_pgo cannot be solved");
     else
-        disp(PL_pgo)
+%         disp(PL_pgo)
+        aa=0;
     end
 
     % Gaussian PL
-    std_position_tsgo=sum(abs(scale_list))*std_tsgo;
-    PL_gaussian=norminv(1e-9/2,0,std_position_tsgo);
-    disp(PL_gaussian)
+    if std_tsgo~=[]
+        std_position_tsgo=sum(abs(scale_list))*std_tsgo;
+        PL_gaussian=norminv(1e-9/2,0,std_position_tsgo);
+        disp(PL_gaussian)
+    else
+        PL_gaussian=999;
+    end
+end
+
+%% Protection level - different nominal model
+function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL_ex(scale_list,x_scale,tsgo_current_cells,pgo_current_cells,PHMI)
+    YanFun=Yan_functions;
+    if scale_list(1)==0
+        return
+    end
+    fft_time_all=0;
+    params_pgo = pgo_current_cells{1};
+    [func_conv,~,~]=YanFun.two_piece_pdf(x_scale/scale_list(1),params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % 解析式求解
+    x_conv=x_scale;
+    
+    coeff=abs(1/scale_list(1));
+%     figure;plot(x_conv,func_conv); hold on
+    for i=2:length(scale_list)
+        s=scale_list(i);
+        if s==0
+            error('s=0');
+        end
+        params_pgo = pgo_current_cells{i};
+        [func_scale,~,~]=YanFun.two_piece_pdf(x_scale/s,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % 解析式求解
+%         func_conv=conv(func_conv,func_scale)*0.01; % convolution
+        [func_conv,x_conv,fft_time]=YanFun.distConv_org(x_conv,x_scale,func_conv,func_scale,"fft"); % fft
+        coeff=coeff*abs(1/s);
+        fft_time_all=fft_time_all+fft_time;
+%         plot(x_conv,func_conv);
+    end
+    pdf_obp=coeff*func_conv;
+    cdf_obp=cumtrapz(pdf_obp);
+    cdf_obp=cdf_obp*0.01;
+%     figure; 
+%     plot(x_conv,cdf_obp);
+
+    xaxi_list=x_conv;
+    cum_p=0;
+    PL_pgo=999; % cannot solve PL_pgo
+    for i=1:length(xaxi_list)
+        if cum_p>sum(pdf_obp)*PHMI/2
+            PL_pgo=xaxi_list(i);
+            break
+        end
+        cum_p=cum_p+pdf_obp(i);
+    end
+    if PL_pgo==999
+        error("PL_pgo cannot be solved");
+    else
+%         disp(PL_pgo)
+        aa=0;
+    end
+
+%     % Gaussian PL
+%     if std_tsgo~=[]
+%         std_position_tsgo=sum(abs(scale_list))*std_tsgo;
+%         PL_gaussian=norminv(1e-9/2,0,std_position_tsgo);
+%         disp(PL_gaussian)
+%     else
+%         PL_gaussian=999;
+%     end
+    PL_gaussian=999;
 end
 
 %% FDE
@@ -846,6 +1005,11 @@ end
 function y = nig_pdf(data)
     % This is a simple implementation of the PDF of the NIG distribution.
     % x is the variable, alpha, beta, delta and mu are parameters of the NIG distribution.
+    
+    % below is the setting in "Rife, J., Pullen, S., & Pervan, B. (2004).
+    % Core Overbounding and its Implications for LAAS Integrity. Proceedings 
+    % of the 17th International Technical Meeting of the Satellite Division of 
+    % The Institute of Navigation (ION GNSS 2004), 2810–2821." with M=1
     mu=0;
     alpha=0.65;
     delta=0.65;

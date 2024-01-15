@@ -5,15 +5,15 @@ seed=1234;
 
 %% load dataset
 % Urban DD
-[Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
-
-% CORS
-% [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
-[ecdf_data, x_lin_ecdf] = ecdf(Xdata);
-gmm_dist=YanFun.gene_GMM_EM_zeroMean(Xdata);
-gmm_dist=YanFun.inflate_GMM(gmm_dist,1,1.2);
-pdf_emp=pdf(gmm_dist,x_lin')';
-cdf_emp=cdf(gmm_dist,x_lin')';
+% [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+% 
+% % CORS
+% % [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
+% [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+% gmm_dist=YanFun.gene_GMM_EM_zeroMean(Xdata);
+% gmm_dist=YanFun.inflate_GMM(gmm_dist,1,1.2);
+% pdf_emp=pdf(gmm_dist,x_lin')';
+% cdf_emp=cdf(gmm_dist,x_lin')';
 
 % GNSS
 % [Xdata,x_lin,pdf_data,cdf_data]=YanFun.load_GNSS();
@@ -25,7 +25,7 @@ cdf_emp=cdf(gmm_dist,x_lin')';
 % cdf_emp=cdf(gmm_dist,x_lin')';
 
 % NIG
-% [Xdata,x_lin,pdf_data,cdf_data]=YanFun.load_NIG();¡¯
+% [Xdata,x_lin,pdf_data,cdf_data]=YanFun.load_NIG();
 % gmm_dist=[];
 
 %% overbound
@@ -79,7 +79,7 @@ cdf_emp=cdf(gmm_dist,x_lin')';
 % A = legend('sample dist.','emp dist.','two-step','Gaussian Pareto','total','Principal Gaussian','stable bound');
 % set(A,'FontSize',12)
 
-%% sbow log scale CDF
+%% show log scale CDF
 % figure;
 % semilogy(x_lin_ecdf,ecdf_data,'ok');
 % hold on
