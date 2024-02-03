@@ -1,32 +1,32 @@
 % clear all
 % close all
 seed=1234;
-YanFun=Yan_functions;
+YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 %% explore T1_trans method (20230701)
 % % analysis whether T1_trans can be modelled as an overbound
-% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFun.load_GMM(seed);
-% YanFun.compare_twoside_bound(Xdata,x_lin,gmm_dist)
+% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFuncLib_Overbound_tmp.load_GMM(seed);
+% YanFuncLib_Overbound_tmp.compare_twoside_bound(Xdata,x_lin,gmm_dist)
 
 %% explore Fault detection (20230702)
 % % explore how conservatism will affect fault detection performance
 % % GMM
-% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFun.load_GMM(seed);
+% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFuncLib_Overbound_tmp.load_GMM(seed);
 % % Two-step Gaussian overbound (zero-mean)
-% [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin);
+% [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound_zero(Xdata,x_lin);
 % % Total Gaussian overbound
-% [mean_tgo, std_tgo, pdf_tgo, cdf_tgo]=YanFun.total_Gaussian_bound(Xdata,x_lin,gmm_dist);
+% [mean_tgo, std_tgo, pdf_tgo, cdf_tgo]=YanFuncLib_Overbound_tmp.total_Gaussian_bound(Xdata,x_lin,gmm_dist);
 % 
 % % FDE params
 % alpha=0.05;
 % num=6;
 % bias=quantile(Xdata,0.001/2);
 % % different method
-% [FA_Gaussian,MD_Gaussian]=YanFun.FDE_Gaussian(alpha,seed,num,gmm_dist,bias,std_tsgo^2);
-% [FA_tGaussian,MD_tGaussian]=YanFun.FDE_Gaussian(alpha,seed,num,gmm_dist,bias,std_tgo^2);
-% [FA_Bayes_max,MD_Bayes_max]=YanFun.FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,"max");
-% [FA_Bayes_sum,MD_Bayes_sum]=YanFun.FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,"sum");
+% [FA_Gaussian,MD_Gaussian]=YanFuncLib_Overbound_tmp.FDE_Gaussian(alpha,seed,num,gmm_dist,bias,std_tsgo^2);
+% [FA_tGaussian,MD_tGaussian]=YanFuncLib_Overbound_tmp.FDE_Gaussian(alpha,seed,num,gmm_dist,bias,std_tgo^2);
+% [FA_Bayes_max,MD_Bayes_max]=YanFuncLib_Overbound_tmp.FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,"max");
+% [FA_Bayes_sum,MD_Bayes_sum]=YanFuncLib_Overbound_tmp.FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,"sum");
 % % Monte-Carlo simulation
-% [FA_arr,MD_arr,var_arr]=YanFun.FDE_mc_compare(alpha,seed,num);
+% [FA_arr,MD_arr,var_arr]=YanFuncLib_Overbound_tmp.FDE_mc_compare(alpha,seed,num);
 
 %% generate NIC dist.(20230704)
 % global mu;
@@ -47,7 +47,7 @@ YanFun=Yan_functions;
 % N = 100000; % number of random numbers to generate
 % interval = [-7, 7]; % interval over which pdf is defined
 % M = 1; % constant M for acceptance-rejection method
-% X = YanFun.customrand(@nig_pdf, interval, N, M)';
+% X = YanFuncLib_Overbound_tmp.customrand(@nig_pdf, interval, N, M)';
 % 
 % figure
 % plot(x,f_sam);
@@ -100,7 +100,7 @@ YanFun=Yan_functions;
 % pdf_gm = pdf_gm / sum(pdf_gm*dx); 
 % cdf_gm = cdf(gm,x');
 % % discrete pdf of overbound
-% pdf_pb=YanFun.two_piece_pdf(x,gm,-xp,xp);
+% pdf_pb=YanFuncLib_Overbound_tmp.two_piece_pdf(x,gm,-xp,xp);
 % pdf_pb = pdf_pb / sum(pdf_pb*dx);   % normalization
 % 
 % % fft
@@ -127,22 +127,22 @@ YanFun=Yan_functions;
 % 
 % % self-convolution
 % % pdf_gm_conv2=conv(pdf_gm,pdf_gm,'same');
-% % pdf_gm_conv2=pdf_gm_conv2/sum(pdf_gm_conv2*dx); % 归一化PDF
-% [pdf_gm_conv2,~]=YanFun.get_conv(x,pdf_gm,pdf_gm);
+% % pdf_gm_conv2=pdf_gm_conv2/sum(pdf_gm_conv2*dx); % normalize PDF
+% [pdf_gm_conv2,~]=YanFuncLib_Overbound_tmp.get_conv(x,pdf_gm,pdf_gm);
 % plot(x,pdf_gm_conv2,'k--','linewidth',1);
 % tic;
 % fft_pdf2=fft(pdf_pb,2*N-1);
 % pdf_recon2 = ifft(fft_pdf2 .* fft_pdf2);
 % fft_conv_t=toc;
-% pdf_recon2=pdf_recon2/sum(pdf_recon2*dx); % 归一化PDF
+% pdf_recon2=pdf_recon2/sum(pdf_recon2*dx); % normalize PDF
 % pdf_recon2=pdf_recon2(1,floor(N/2):floor(N/2)+N-1); % cut
 % plot(x,abs(pdf_recon2),'b--','linewidth',0.5);
 % % tic;
 % % pdf_dconv2=conv(pdf_pb,pdf_pb);
 % % conv_t=toc;
-% % pdf_dconv2=pdf_dconv2/sum(pdf_dconv2*dx); % 归一化PDF
+% % pdf_dconv2=pdf_dconv2/sum(pdf_dconv2*dx); % normalize PDF
 % % pdf_dconv2=pdf_dconv2(1,floor(N/2):floor(N/2)+N-1); %cut
-% [pdf_dconv2,conv_t]=YanFun.get_conv(x,pdf_pb,pdf_pb);
+% [pdf_dconv2,conv_t]=YanFuncLib_Overbound_tmp.get_conv(x,pdf_pb,pdf_pb);
 % plot(x,pdf_dconv2,'r:','linewidth',1);
 % A = legend('sample','pb','recon pb','sample conv','fft ifft conv','direct conv');
 % set(A,'FontSize',12)
@@ -170,8 +170,8 @@ YanFun=Yan_functions;
 % x=x_lin;
 % dt=abs(x_lin(1)-x_lin(2));
 % pdf_conv=conv(pdf_data,pdf_data)*dt;
-% [pdf_conv_org,x_fftconv,conv_t_org]=YanFun.distConv_org(x,x,pdf_data,pdf_data,"direct");
-% [pdf_fftconv_org,x_fftconv_org,fft_conv_t_org]=YanFun.distConv_org(x,x,pdf_data,pdf_data,"fft");
+% [pdf_conv_org,x_fftconv,conv_t_org]=YanFuncLib_Overbound_tmp.distConv_org(x,x,pdf_data,pdf_data,"direct");
+% [pdf_fftconv_org,x_fftconv_org,fft_conv_t_org]=YanFuncLib_Overbound_tmp.distConv_org(x,x,pdf_data,pdf_data,"fft");
 % 
 % plot(x_fftconv,pdf_conv_org);
 % hold on
@@ -192,10 +192,10 @@ YanFun=Yan_functions;
 % 
 % % right-tail overbound
 % global thr_R xi_R scale_R theta_R
-% [thr_R,theta_R,xi_R,scale_R]=YanFun.gp_tail_overbound(Xdata);
+% [thr_R,theta_R,xi_R,scale_R]=YanFuncLib_Overbound_tmp.gp_tail_overbound(Xdata);
 % % left-tail overbound
 % global thr_L xi_L scale_L theta_L
-% [thr_L,theta_L,xi_L,scale_L]=YanFun.gp_tail_overbound(-Xdata);
+% [thr_L,theta_L,xi_L,scale_L]=YanFuncLib_Overbound_tmp.gp_tail_overbound(-Xdata);
 % thr_L=-thr_L;
 % % Gaussian core overbound - Two-step method
 % Nbins = 100;
@@ -226,27 +226,27 @@ YanFun=Yan_functions;
 % plot(x,y_pdf,'b','LineWidth',2);
 
 %% 2023072 GPS data (from yihan) processing
-% % 设置文件夹路径和文件名
-% folder = 'Data/mnav_zmp1_jan_20240105'; % 文件夹路径
-% filePattern = fullfile(folder, '*.csv'); % 文件名通配符
-% csvFiles = dir(filePattern); % 匹配文件夹中所有符合通配符的 CSV 文件
-% 
-% % 循环读取每个 CSV 文件
+% % set folder path and file name
+% folder = 'Data/mnav_zmp1_jan_20240105'; 
+% filePattern = fullfile(folder, '*.csv'); % using wildcard
+% csvFiles = dir(filePattern); % 
+
+% % read each csv
 % for i = 1:length(csvFiles)
 %     filename = fullfile(csvFiles(i).folder, csvFiles(i).name);
-%     data{i} = readtable(filename, 'HeaderLines', 1); % 跳过表头的第一行
+%     data{i} = readtable(filename, 'HeaderLines', 1); % jump first line of header 
 % end
 % 
-% % 合并所有数据表格为一个大数据表格
+% % merge
 % bigTable = vertcat(data{:});
-% % 设置文件名和文件路径
-% filename = 'merged_Ref_Jan.csv'; % 新文件名
-% folder = 'Data/mnav_zmp1_jan_20240105'; % 新文件保存路径
+% % set folder path and file name
+% filename = 'merged_Ref_Jan.csv'; % new filename
+% folder = 'Data/mnav_zmp1_jan_20240105'; % path for saving new file
 % fullPath = fullfile(folder, filename);
 % 
-% % 保存表格为 CSV 文件
+% % save to csv
 % writetable(bigTable, fullPath, 'Delimiter', ',', 'QuoteStrings', true);
-% % 手动加表头
+% % add header manually
 % 
 % load('Data/mnav_zmp1_jan/mergedRefJan.mat');
 % % select: ele(25~50)
@@ -254,14 +254,13 @@ YanFun=Yan_functions;
 % Xdata=mergedurbandd.doubledifferenced_pseudorange_error(filter_ele);
 
 %% 20230802 Bias in Principal Gaussian overbound
-% YanFun=Yan_functions;
 % seed=1234;
 % % load GMM
-% % [Xemp,x_lin_emp,pdf_emp,cdf_emp,gmm_dist]=YanFun.load_GMM_bias(seed);
-% % [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
-% [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+% % [Xemp,x_lin_emp,pdf_emp,cdf_emp,gmm_dist]=YanFuncLib_Overbound_tmp.load_GMM_bias(seed);
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
 % % Xdata=Xdata-median(Xdata); % should not do this
-% % [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin);
 % Xmedian=median(Xdata);
@@ -275,30 +274,30 @@ YanFun=Yan_functions;
 % % Ref  | 60-65| ?        |  0.7  |
 % % Urban| 30-35| 1,   2.2 |  0.7  |
 % % Urban| 30-80| 1.2, 2   |  0.9  |
-% gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
-% gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,1,2.2) % inflate_ref30: (1,1.15); inflate_urban_30-80: (1.2,2); inflate_urban_30:
-% [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.9); %ref30:0.9; ref60:0.7; urban_30-80:0.9
-% [s1_list,s2_list]=YanFun.gen_s1_s2(x_lin,Xdata,gmm_dist,0,ax);
+% gmm_dist_raw=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
+% gmm_dist=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,1,2.2) % inflate_ref30: (1,1.15); inflate_urban_30-80: (1.2,2); inflate_urban_30:
+% [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.9); %ref30:0.9; ref60:0.7; urban_30-80:0.9
+% [s1_list,s2_list]=YanFuncLib_Overbound_tmp.gen_s1_s2(x_lin,Xdata,gmm_dist,0,ax);
 % plot(ax,x_lin,pdf_pgo,'g','LineWidth',2);
 % 
 % ax=subplot(1,3,2);
 % % Principal Gaussian overbound (left)
 % Xleft=Xdata(Xdata<Xmedian);
 % Xleft_recon=[Xleft;2*Xmedian-Xleft;Xmedian];
-% gmm_dist_left=YanFun.gene_GMM_EM_zeroMean(Xleft_recon-mean(Xleft_recon));
-% gmm_dist_left=YanFun.inflate_GMM(gmm_dist_left,1,1.5) % inflate: 1.1; inflate: 1.5
-% [s1_list,s2_list]=YanFun.gen_s1_s2(x_lin,Xleft_recon,gmm_dist_left,mean(Xleft_recon),ax);
-% [params_pgo_left, pdf_pgo_left, cdf_pgo_left]=YanFun.Principal_Gaussian_bound(Xleft_recon-mean(Xleft_recon),x_lin,gmm_dist_left,0.7);
+% gmm_dist_left=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xleft_recon-mean(Xleft_recon));
+% gmm_dist_left=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_left,1,1.5) % inflate: 1.1; inflate: 1.5
+% [s1_list,s2_list]=YanFuncLib_Overbound_tmp.gen_s1_s2(x_lin,Xleft_recon,gmm_dist_left,mean(Xleft_recon),ax);
+% [params_pgo_left, pdf_pgo_left, cdf_pgo_left]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xleft_recon-mean(Xleft_recon),x_lin,gmm_dist_left,0.7);
 % plot(ax,x_lin+mean(Xleft_recon),pdf_pgo_left,'g','LineWidth',2);
 % 
 % ax=subplot(1,3,3);
 % % Principal Gaussian overbound (right)
 % Xright=Xdata(Xdata>Xmedian);
 % Xright_recon=[Xright;2*Xmedian-Xright;Xmedian];
-% gmm_dist_right=YanFun.gene_GMM_EM_zeroMean(Xright_recon-mean(Xright_recon));
-% gmm_dist_right=YanFun.inflate_GMM(gmm_dist_right,1,1.5) % inflate: 1.1;inflate: 1.5
-% [s1_list,s2_list]=YanFun.gen_s1_s2(x_lin,Xright_recon,gmm_dist_right,mean(Xright_recon),ax);
-% [params_pgo_right, pdf_pgo_right, cdf_pgo_right]=YanFun.Principal_Gaussian_bound(Xright_recon-mean(Xright_recon),x_lin,gmm_dist_right,0.9);
+% gmm_dist_right=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xright_recon-mean(Xright_recon));
+% gmm_dist_right=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_right,1,1.5) % inflate: 1.1;inflate: 1.5
+% [s1_list,s2_list]=YanFuncLib_Overbound_tmp.gen_s1_s2(x_lin,Xright_recon,gmm_dist_right,mean(Xright_recon),ax);
+% [params_pgo_right, pdf_pgo_right, cdf_pgo_right]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xright_recon-mean(Xright_recon),x_lin,gmm_dist_right,0.9);
 % plot(ax,x_lin+mean(Xright_recon),pdf_pgo_right,'g','LineWidth',2);
 % 
 % % cdf
@@ -306,13 +305,13 @@ YanFun=Yan_functions;
 % h1=plot(x_lin_ecdf,ecdf_data,'k','LineWidth',2);
 % hold on
 % % Two step Gaussian
-% [params,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFun.two_step_bound(Xdata,x_lin);
+% [params,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound(Xdata,x_lin);
 % h21=plot(x_lin(1:params.idx),cdf_left_tsgo(1:params.idx),'r','LineWidth',2);
 % h22=plot(x_lin(params.idx+1:end),cdf_left_tsgo(params.idx+1:end),'y','LineWidth',1);
 % h23=plot(x_lin(1:params.idx),cdf_right_tsgo(1:params.idx),'y--','LineWidth',1);
 % h24=plot(x_lin(params.idx+1:end),cdf_right_tsgo(params.idx+1:end),'r--','LineWidth',2);
 % % Gaussian Pareto
-% [params_gpo,pdf_gpo,cdf_gpo]=YanFun.Gaussian_Pareto_bound(Xdata,x_lin);
+% [params_gpo,pdf_gpo,cdf_gpo]=YanFuncLib_Overbound_tmp.Gaussian_Pareto_bound(Xdata,x_lin);
 % h3=plot(x_lin,cdf_gpo,'b','LineWidth',2);
 % h41=plot(x_lin(1:ceil(counts/2))+mean(Xleft_recon),cdf_pgo_left(1:ceil(counts/2)),'g','LineWidth',2);
 % h42=plot(x_lin(ceil(counts/2)+1:end)+mean(Xright_recon),cdf_pgo_right(ceil(counts/2)+1:end),'g--','LineWidth',2);
@@ -377,7 +376,7 @@ YanFun=Yan_functions;
 % figure;
 % % define quantile range
 % q_lin=linspace(0.001, 1-0.001, 10000);
-% x_lin2=linspace(-3, 3, 10000); % solve: 错误使用 griddedInterpolant
+% x_lin2=linspace(-3, 3, 10000); % solved: wrong use of griddedInterpolant
 % cdf_norm=normcdf(x_lin2,0,1);
 % ref_q=interp1(cdf_norm, x_lin2, q_lin, 'linear', 'extrap');
 % data_source = interp1(ecdf_data, x_lin_ecdf, q_lin, 'linear', 'extrap');
@@ -404,7 +403,6 @@ YanFun=Yan_functions;
 % set(gca, 'FontSize', 12,'FontName', 'Times New Roman');
 
 %% 20240102 model all ele_bin for Ref data
-% YanFun=Yan_functions;
 % seed=1234;
 % gmm_cells=cell(0);
 % tsgo_cells=cell(0);
@@ -415,9 +413,9 @@ YanFun=Yan_functions;
 % for ele_start=15:5:75
 %     try
 %         % load Data
-%         [Xdata,x_lin,pdf_data]=YanFun.load_RefDD('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat',ele_start,5);
-% %         [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD('Data/urban_dd_20240104/mergeurbandd.mat',30,50);% use all data for fitting
-% %         [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+%         [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat',ele_start,5);
+% %         [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD('Data/urban_dd_20240104/mergeurbandd.mat',30,50);% use all data for fitting
+% %         [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
 %         pdf_emp = ksdensity(Xdata,x_lin);
 %         cdf_emp=cumtrapz(pdf_emp);
 %         cdf_emp=cdf_emp*(x_lin(2)-x_lin(1));
@@ -425,14 +423,14 @@ YanFun=Yan_functions;
 %         [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 %         counts=length(x_lin);
 %         % fit gmm
-%         gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
+%         gmm_dist_raw=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
 %         % Two-step Gaussian overbound (zero-mean)
-%         [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin);
+%         [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound_zero(Xdata,x_lin);
 %         param_tsgo = std_tsgo;
 %         % Principal Gaussian overbound (zero-mean)
 %         inflate_core=1; inflate_tail=1; thr=0.7;
-%         gmm_dist_inflate=YanFun.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
-%         [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
+%         gmm_dist_inflate=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
+%         [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
 %         % store 
 %         gmm_cells{i}=gmm_dist_raw;
 %         tsgo_cells{i}=param_tsgo;
@@ -746,7 +744,6 @@ YanFun=Yan_functions;
 
 
 %% 20240114 model all ele_bin for Ref CHTI
-% YanFun=Yan_functions;
 % seed=1234;
 % gmm_cells=cell(0);
 % tsgo_cells=cell(0);
@@ -757,7 +754,7 @@ YanFun=Yan_functions;
 % for ele_start=80:5:85
 %     try
 %         % load Data
-%         [Xdata,x_lin,pdf_data]=YanFun.load_RefSPP('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat',ele_start,5);
+%         [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefSPP('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat',ele_start,5);
 %         pdf_emp = ksdensity(Xdata,x_lin);
 %         cdf_emp=cumtrapz(pdf_emp);
 %         cdf_emp=cdf_emp*(x_lin(2)-x_lin(1));
@@ -765,14 +762,14 @@ YanFun=Yan_functions;
 %         [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 %         counts=length(x_lin);
 %         % fit gmm
-%         gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
+%         gmm_dist_raw=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
 %         % Two-step Gaussian overbound (zero-mean)
-%         [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin);
+%         [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound_zero(Xdata,x_lin);
 %         param_tsgo = std_tsgo;
 %         % Principal Gaussian overbound (zero-mean)
 %         inflate_core=1; inflate_tail=1; thr=0.7;
-%         gmm_dist_inflate=YanFun.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
-%         [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
+%         gmm_dist_inflate=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
+%         [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
 %         % store 
 %         gmm_cells{i}=gmm_dist_raw;
 %         tsgo_cells{i}=param_tsgo;
@@ -1068,7 +1065,7 @@ end
 function is_detect=jackknife_detector(GTusr_xyz,meas,meas_std,m_sv_pos,s_sv_pos,ref_xyz,pgo_current_cells,ob_type)
     is_detect=false;
     init_state=zeros(3,1);
-    rho=-meas; % here is yihan's wrong operation，I need to correct it
+    rho=-meas; % here is yihan's wrong operation, I need to correct it
     n=length(rho);
     Sigma=diag(meas_std.^2);
     W=inv(Sigma);
@@ -1120,10 +1117,8 @@ function is_detect=jackknife_detector(GTusr_xyz,meas,meas_std,m_sv_pos,s_sv_pos,
             x_scale=-10:0.01:10;
             scale_list=Isp_rec';
             PHMI=0.05/n;
-            addpath('../../N06_TAES/Matlab_PGO')
-            YanFun=Yan_functions();
             % solve distribution and critical value of t_i
-            [PL_fake,~,fft_time_all]=YanFun.cal_PL_ex(scale_list,x_scale,[],pgo_current_cells,PHMI);
+            [PL_fake,~,fft_time_all]=YanFuncLib_Overbound_tmp.cal_PL_ex(scale_list,x_scale,[],pgo_current_cells,PHMI);
             % threhold
             thr_i=abs(PL_fake);
         end
@@ -1187,10 +1182,8 @@ function is_detect=jackknife_detector_SPP(GTusr_xyz,meas,meas_std,sv_pos,pgo_cur
             x_scale=-10:0.01:10;
             scale_list=Isp_rec';
             PHMI=0.05/n;
-            addpath('../../N06_TAES/Matlab_PGO')
-            YanFun=Yan_functions();
             % solve distribution and critical value of t_i
-            [PL_fake,~,fft_time_all]=YanFun.cal_PL_ex(scale_list,x_scale,[],pgo_current_cells,PHMI);
+            [PL_fake,~,fft_time_all]=YanFuncLib_Overbound_tmp.cal_PL_ex(scale_list,x_scale,[],pgo_current_cells,PHMI);
             % threhold
             thr_i=abs(PL_fake);
         end

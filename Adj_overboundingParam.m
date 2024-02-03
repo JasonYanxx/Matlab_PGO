@@ -1,5 +1,6 @@
+addLibPathInit();
+YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 %% addjust overbounding parameters (both pgo and tsgo) (be careful when using it)
-% YanFun=Yan_functions;
 % seed=1234;
 % % load('CHTI_overbounding.mat');
 % % load('ref_overbounding.mat');
@@ -7,8 +8,8 @@
 % for i=1:length(ele_start_list)
 %         ele_start=ele_start_list(i);
 %         % load Data
-% %         [Xdata,x_lin,pdf_data]=YanFun.load_RefSPP('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat',ele_start,5);
-%         [Xdata,x_lin,pdf_data]=YanFun.load_RefDD('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat',ele_start,5);
+% %         [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefSPP('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat',ele_start,5);
+%         [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat',ele_start,5);
 % 
 %         pdf_emp = ksdensity(Xdata,x_lin);
 %         cdf_emp=cumtrapz(pdf_emp);
@@ -33,8 +34,8 @@
 %             inflate_tail=1;
 %             thr=0.7;
 %         end
-%         gmm_dist_inflate=YanFun.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
-%         [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
+%         gmm_dist_inflate=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
+%         [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
 %         
 %         close all
 %         % show pdf
@@ -114,7 +115,6 @@
 % % save('ref_overbounding_correction',"gmm_cells","tsgo_cells","pgo_cells","ele_start_list","inflate_cells")
 
 %% visualize overbounding 
-YanFun=Yan_functions;
 seed=1234;
 % load('CHTI_overbounding_correction.mat');
 load('ref_overbounding_correction.mat');
@@ -122,8 +122,8 @@ figure
 for i=1:min(12,length(ele_start_list))
         ele_start=ele_start_list(i);
         % load Data
-%         [Xdata,x_lin,pdf_data]=YanFun.load_RefSPP('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat',ele_start,5);
-        [Xdata,x_lin,pdf_data]=YanFun.load_RefDD('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat',ele_start,5);
+%         [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefSPP('Data/cors_CHTI_Jan/mergedCHTIJan_exd.mat',ele_start,5);
+        [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD('Data/mnav_zmp1_jan_20240105/mergedRefJan.mat',ele_start,5);
 
         pdf_emp = ksdensity(Xdata,x_lin);
         cdf_emp=cumtrapz(pdf_emp);
@@ -141,8 +141,8 @@ for i=1:min(12,length(ele_start_list))
         inflate_core=inflate_cells{1,i};
         inflate_tail=inflate_cells{2,i};
         thr=inflate_cells{3,i};
-        gmm_dist_inflate=YanFun.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
-        [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
+        gmm_dist_inflate=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,inflate_core,inflate_tail); % inflate
+        [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist_inflate,thr);
 
 %         % log scale cdf (left side) 4x3
 %         subplot(4,3,i)

@@ -1,51 +1,52 @@
 clear all
 close all
-YanFun=Yan_functions;
+addLibPathInit();
+YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 seed=1234;
 
 %% load dataset
 % Urban DD
-% [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
 % 
 % % CORS
-% % [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD();
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
-% gmm_dist=YanFun.gene_GMM_EM_zeroMean(Xdata);
-% gmm_dist=YanFun.inflate_GMM(gmm_dist,1,1.2);
+% gmm_dist=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
+% gmm_dist=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist,1,1.2);
 % pdf_emp=pdf(gmm_dist,x_lin')';
 % cdf_emp=cdf(gmm_dist,x_lin')';
 
 % GNSS
-% [Xdata,x_lin,pdf_data,cdf_data]=YanFun.load_GNSS();
+% [Xdata,x_lin,pdf_data,cdf_data]=YanFuncLib_Overbound_tmp.load_GNSS();
 % gmm_dist=[];
 
 % GMM
-% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFun.load_GMM(seed);
+% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFuncLib_Overbound_tmp.load_GMM(seed);
 % pdf_emp=pdf(gmm_dist,x_lin')';
 % cdf_emp=cdf(gmm_dist,x_lin')';
 
 % NIG
-% [Xdata,x_lin,pdf_data,cdf_data]=YanFun.load_NIG();
+% [Xdata,x_lin,pdf_data,cdf_data]=YanFuncLib_Overbound_tmp.load_NIG();
 % gmm_dist=[];
 
 %% overbound
 % % Two-step Gaussian overbound (zero-mean)
-% [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin);
+% [mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound_zero(Xdata,x_lin);
 % 
 % % Two-step Gaussian overbound (same bias)
-% [params_tsgo,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFun.two_step_bound(Xdata,x_lin);
+% [params_tsgo,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound(Xdata,x_lin);
 % 
 % % Gaussian-Pareto overbound (zero-mean)
-% [params_gpo,pdf_gpo,cdf_gpo]=YanFun.Gaussian_Pareto_bound(Xdata,x_lin);
+% [params_gpo,pdf_gpo,cdf_gpo]=YanFuncLib_Overbound_tmp.Gaussian_Pareto_bound(Xdata,x_lin);
 % 
 % % Total Gaussian overbound
-% [mean_tgo, std_tgo, pdf_tgo, cdf_tgo]=YanFun.total_Gaussian_bound(Xdata,x_lin,gmm_dist);
+% [mean_tgo, std_tgo, pdf_tgo, cdf_tgo]=YanFuncLib_Overbound_tmp.total_Gaussian_bound(Xdata,x_lin,gmm_dist);
 
 % % Principal Gaussian overbound (zero-mean)
-% [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.7);
+% [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.7);
 
 % % Stable(SaS) overbound (zero-mean)
-% [alpha_saso, gama_saso,pdf_saso,cdf_saso]=YanFun.stable_bound(Xdata,x_lin);
+% [alpha_saso, gama_saso,pdf_saso,cdf_saso]=YanFuncLib_Overbound_tmp.stable_bound(Xdata,x_lin);
 
 %% show pdf
 % figure
@@ -124,18 +125,18 @@ seed=1234;
 %     num_conv=num_conv_list(i);
 %     ts_fft=0;
 %     for j=1:10
-%         [pdf_convfft,ts_fft_all]=YanFun.distSelfConv(x_lin,pdf_pgo,num_conv,"fft");
+%         [pdf_convfft,ts_fft_all]=YanFuncLib_Overbound_tmp.distSelfConv(x_lin,pdf_pgo,num_conv,"fft");
 %         ts_fft=ts_fft+ts_fft_all;
 %     end
 %     fprintf('%i x fft ifft convolution takes: %f s\n',num_conv,ts_fft/10);
 %     
 %     ts=0;
 %     for j=1:10
-%         [pdf_conv,ts_all]=YanFun.distSelfConv(x_lin,pdf_pgo,num_conv,"direct");
+%         [pdf_conv,ts_all]=YanFuncLib_Overbound_tmp.distSelfConv(x_lin,pdf_pgo,num_conv,"direct");
 %         ts=ts+ts_all;
 %     end
 %     fprintf('%i x direct convolution taks: %f s\n',num_conv,ts/10);
 % end
 
 %% Convolution visualization: verify overbound preservation
-% YanFun.compareConvOverbound(x_lin,pdf_pgo,pdf_emp,2)
+% YanFuncLib_Overbound_tmp.compareConvOverbound(x_lin,pdf_pgo,pdf_emp,2)

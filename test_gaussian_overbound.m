@@ -7,7 +7,7 @@
 %*     Questions and comments should be directed to Juan Blanch at:      *
 %*     blanch@stanford.edu                                               *
 %*************************************************************************
-% 生成高斯混合分布数据
+% gene GMM
 p1=0.5;
 p2=0.5;
 % mu1=0.01;
@@ -22,7 +22,7 @@ gm = gmdistribution([mu1; mu2], cat(3, sigma1, sigma2), [p1 p2]);
 Xgmm = random(gm, 100000);
 
 
-% 生成高斯分布数据 - total mean & variance
+% gene GMM - total mean & variance
 mut=p1*mu1+p2*mu2;
 sigmat=p1*sigma1+(mut-mu1)*(mut-mu1)+p2*sigma2+(mut-mu2)*(mut-mu2);
 Xt = normrnd(mut, sqrt(sigmat), 100000, 1);
@@ -67,7 +67,7 @@ for i=1:100000
     T1transpp(1,i)=normpdf(y, s1*mu1+s2*mu2, s1*sqrt(sigma1)+s2*sqrt(sigma2));
 end
 
-% 从右侧开始算累积分布
+% culmative prob starting from right
 T1transpp_inverse = flip(T1transpp);
 cdf_T1transpp = cumtrapz(T1transpp_inverse);
 % T1pp_cdf = T1pp_cdf / T1pp_cdf(end);
@@ -100,7 +100,7 @@ for i=1:100000
     T1transpp(1,i)=normpdf(y, -s1*mu1-s2*mu2, s1*sqrt(sigma1)+s2*sqrt(sigma2));
 end
 
-% 从右侧开始算累积分布
+% culmative prob starting from right
 T1transpp_inverse = flip(T1transpp);
 cdf_T1transpp = cumtrapz(T1transpp_inverse);
 % T1pp_cdf = T1pp_cdf / T1pp_cdf(end);

@@ -1,6 +1,7 @@
+addLibPathInit();
+YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 %% Paper-demo: Fig. 1 & 2
 % close all
-% YanFun=Yan_functions;
 % p1=0.9;
 % p2=1-p1;
 % mu1=0;
@@ -12,8 +13,8 @@
 % Xdata=random(gm, Nsamples);
 % lim=max(-min(Xdata),max(Xdata));
 % x_lin = linspace(-lim, lim, Nsamples);
-% [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gm,0.7);
-% [mean_tsgo, std_tsgo, ~, ~]=YanFun.two_step_bound_zero(Xdata,x_lin);
+% [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gm,0.7);
+% [mean_tsgo, std_tsgo, ~, ~]=YanFuncLib_Overbound_tmp.two_step_bound_zero(Xdata,x_lin);
 % 
 % % member weight
 % figure;
@@ -74,11 +75,10 @@
 % grid on
 
 %% Paper-Overbounding compare: Fig.3, Fig.6
-% YanFun=Yan_functions;
 % seed=1234;
 % % load Data
-% [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
-% % [Xdata,x_lin,pdf_data]=YanFun.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD();
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin);
 % 
@@ -88,9 +88,9 @@
 % % Ref  | 60-65| ?        |  0.7  |
 % % Urban| 30-35| 1,   2.2 |  0.7  |
 % % Urban| 30-80| 1.2, 2   |  0.9  |
-% gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
-% gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,1,1.15) 
-% [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.7); 
+% gmm_dist_raw=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
+% gmm_dist=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,1,1.15) 
+% [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.7); 
 % 
 % % qq plot
 % Xnorm=randn(1,length(Xdata));
@@ -105,11 +105,11 @@
 % h1=plot(x_lin_ecdf,ecdf_data,'k','LineWidth',2);
 % hold on
 % % Two step Gaussian
-% [params,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFun.two_step_bound(Xdata,x_lin);
+% [params,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound(Xdata,x_lin);
 % h21=plot(x_lin(1:params.idx),cdf_left_tsgo(1:params.idx),'g','LineWidth',2);
 % h24=plot(x_lin(params.idx+1:end),cdf_right_tsgo(params.idx+1:end),'g--','LineWidth',2);
 % % Gaussian Pareto
-% [params_gpo,pdf_gpo,cdf_gpo]=YanFun.Gaussian_Pareto_bound(Xdata,x_lin);
+% [params_gpo,pdf_gpo,cdf_gpo]=YanFuncLib_Overbound_tmp.Gaussian_Pareto_bound(Xdata,x_lin);
 % h3=plot(x_lin,cdf_gpo,'r','LineWidth',2);
 % h5=plot(x_lin,cdf_pgo,'bd-','LineWidth',1,'MarkerSize', 4,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
 % xlabel('Error');
@@ -154,12 +154,12 @@
 % load('Data/Urban_dd_0816/mergeurbandd.mat');
 % % load('Data/mnav_zmp1_jan/mergedRefJan.mat');
 % figure;
-% % 设置颜色映射
-% cmap = hot; % 使用 jet 色图
+% % set color map
+% cmap = hot; % use jet color map
 % cmap = flipud(cmap);
-% c = abs(mergedurbandd.doubledifferenced_pseudorange_error); % 将第三维特征 z 作为颜色
+% c = abs(mergedurbandd.doubledifferenced_pseudorange_error); % z-axis as color
 % c=log(c);
-% % 绘制 2D 散点图，并使用第三维特征表示颜色
+% % plot 2D scatter; use z-axis as color
 % scatter(mergedurbandd.U2I_Elevation, mergedurbandd.U2I_SNR, 30, c, 'filled');
 % colormap(cmap);
 % colorbar;
@@ -168,18 +168,17 @@
 
 
 %% VPL and VPE series, PL compuation time: Fig. 7a,b
-YanFun=Yan_functions;
 seed=1234;
 % load GMM
-[Xdata,x_lin_org,pdf_data]=YanFun.load_UrbanDD();
+[Xdata,x_lin_org,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
 [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 counts=length(x_lin_org);
 % Principal Gaussian overbound (zero-mean)
-gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
-gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,2,1.5); % inflate: 1.15; inflate: (2,1.5)
-[params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin_org,gmm_dist,0.7);
+gmm_dist_raw=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
+gmm_dist=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,2,1.5); % inflate: 1.15; inflate: (2,1.5)
+[params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin_org,gmm_dist,0.7);
 % two-step Gaussian overbound (zero-mean)
-[mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFun.two_step_bound_zero(Xdata,x_lin_org);
+[mean_tsgo, std_tsgo, pdf_tsgo, cdf_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound_zero(Xdata,x_lin_org);
 % expand the definition domian of the range domain error
 lim=50;
 Nsamples=100000;
@@ -189,15 +188,15 @@ x_lin_exd_left= linspace(-lim, min(x_lin_org)-delta_lin, AugCounts);
 x_lin_exd_right= linspace(max(x_lin_org)+delta_lin,lim, AugCounts);
 x_lin_exd=[x_lin_exd_left x_lin_org x_lin_exd_right];
 % obtain the excact value of pgo on the extended definition domain
-[pdf_pgo_exd,~,~]=YanFun.two_piece_pdf(x_lin_exd,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); 
+[pdf_pgo_exd,~,~]=YanFuncLib_Overbound_tmp.two_piece_pdf(x_lin_exd,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); 
 
 % set transformation matrix: ecef to enu
-% 在线大地坐标系与空间直角坐标系转换 https://www.lddgo.net/convert/coordinate-transform
+% the tool: https://www.lddgo.net/convert/coordinate-transform
 p_ecef=[-2418235.676841056 , 5386096.899553243 , 2404950.408609563];
 p_lbh=[114.1790017,22.29773881,3];
 p.L=p_lbh(1);p.B=p_lbh(2);p.H=p_lbh(3);
 p.Xp=p_ecef(1);p.Yp=p_ecef(2);p.Zp=p_ecef(3);
-M=YanFun.matrix_ecef2enu(p);
+M=YanFuncLib_Overbound_tmp.matrix_ecef2enu(p);
 
 % PL 
 min_s=10000;
@@ -274,7 +273,7 @@ for i=1:length(error_data)
     x_scale=-30:0.01:30;
     try
         PHMI=1e-9;
-        [PL_pgo,PL_gaussian,fft_time_all]=YanFun.cal_PL(scale_list,x_scale,params_pgo,std_tsgo,PHMI);
+        [PL_pgo,PL_gaussian,fft_time_all]=YanFuncLib_Overbound_tmp.cal_PL(scale_list,x_scale,params_pgo,std_tsgo,PHMI);
         PL_pgo_list(i)=PL_pgo;
         PL_gaussian_list(i)=PL_gaussian;
         cal_time_list(i)=fft_time_all;
@@ -363,25 +362,24 @@ set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 % set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 
 %% Paper-alpha effects: Fig. 8
-% YanFun=Yan_functions;
 % seed=1234;
 % % load Data
-% [Xdata,x_lin,pdf_data]=YanFun.load_RefDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD();
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin);
 % 
 % % Two step Gaussian
-% [params,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFun.two_step_bound(Xdata,x_lin);
+% [params,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound(Xdata,x_lin);
 % % Gaussian Pareto
-% [params_gpo,pdf_gpo,cdf_gpo]=YanFun.Gaussian_Pareto_bound(Xdata,x_lin);
+% [params_gpo,pdf_gpo,cdf_gpo]=YanFuncLib_Overbound_tmp.Gaussian_Pareto_bound(Xdata,x_lin);
 % 
 % % Principal Gaussian overbound (zero-mean)
 % % Type | Ele. | Inflate  | alpha |
 % % Ref  | 30-35| 1,   1.15|  0.7  |
-% gmm_dist_raw=YanFun.gene_GMM_EM_zeroMean(Xdata);
-% gmm_dist=YanFun.inflate_GMM(gmm_dist_raw,1,1.15) 
+% gmm_dist_raw=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
+% gmm_dist=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_raw,1,1.15) 
 % 
-% % 指定颜色映射名称和数组长度
+% % set coloar map and length of data array
 % % log scale cdf (left side)
 % figure;
 % semilogy(x_lin_ecdf,ecdf_data,'k+','LineWidth',1,'MarkerSize', 4,'DisplayName','Sample dist.');
@@ -390,14 +388,14 @@ set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 % semilogy(x_lin,cdf_gpo,'r','LineWidth',2,'DisplayName','Gaussian-Pareto');
 % mapName = 'jet';
 % counts = 2;
-% % 生成颜色映射
+% % generate color map
 % cmap = colormap(mapName);
 % step=floor(length(cmap)/counts)+1;
-% % 截取指定长度的颜色映射
+% % Intercept a color map of specified length
 % colorArray  = cmap(1:step:end, :);
 % for i=1:counts
 %     alpha=i*0.05+0.5;
-%     [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,alpha); 
+%     [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,alpha); 
 %     semilogy(x_lin,cdf_pgo,'LineWidth',1,'DisplayName',num2str(alpha),'color',colorArray(i,:));
 % end
 % xlim([min(x_lin)*1.2,max(x_lin)*0.5])
@@ -409,16 +407,15 @@ set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 % grid on
 
 %% Bias effects and paired Principal Gaussian overbound: future work
-% YanFun=Yan_functions;
 % seed=1234;
 % % load GMM
-% [Xdata,x_lin,pdf_data,cdf_data,~]=YanFun.load_GMM_bias(seed);
-% gmm_dist=YanFun.gene_GMM_EM_zeroMean(Xdata);
+% [Xdata,x_lin,pdf_data,cdf_data,~]=YanFuncLib_Overbound_tmp.load_GMM_bias(seed);
+% gmm_dist=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
 % pdf_emp=pdf(gmm_dist,x_lin')';
 % cdf_emp=cdf(gmm_dist,x_lin')';
 % 
 % % Principal Gaussian overbound (zero-mean)
-% [params_pgo, pdf_pgo, cdf_pgo]=YanFun.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.7);
+% [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,0.7);
 % 
 % figure
 % subplot(1,2,1)
@@ -443,9 +440,9 @@ set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 % Xmedian=median(Xdata);
 % Xleft=Xdata(Xdata<Xmedian);
 % Xleft_recon=[Xleft;2*Xmedian-Xleft;Xmedian];
-% gmm_dist_left=YanFun.gene_GMM_EM_zeroMean(Xleft_recon-mean(Xleft_recon));
-% gmm_dist_left=YanFun.inflate_GMM(gmm_dist_left,1,1.1)
-% [params_pgo_left, pdf_pgo_left, cdf_pgo_left]=YanFun.Principal_Gaussian_bound(Xleft_recon-mean(Xleft_recon),x_lin,gmm_dist_left,0.6);
+% gmm_dist_left=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xleft_recon-mean(Xleft_recon));
+% gmm_dist_left=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist_left,1,1.1)
+% [params_pgo_left, pdf_pgo_left, cdf_pgo_left]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xleft_recon-mean(Xleft_recon),x_lin,gmm_dist_left,0.6);
 % counts=length(x_lin);
 % plot(x_lin(1:floor(counts/2))+mean(Xleft_recon),pdf_pgo_left(1:floor(counts/2))*length(Xdata)*0.2,'r','LineWidth',2);
 % 

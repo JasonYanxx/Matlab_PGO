@@ -24,14 +24,14 @@ while  cdf<.5*Nsamples
     %cdf=cdf+newvalue;
     cdf = sum(shiftedHistogram(i:end))+newvalue;
     if cdf<.5*Nsamples
-       i=i-1; % 选中左侧bin
-       shiftedHistogram(i)=newvalue; % 左侧的bin value 一定要比右侧大
+       i=i-1; % select bins in the left
+       shiftedHistogram(i)=newvalue; % bin value in the left must be larger than that in the right 
        added_mass = newvalue-sampleHistogram(i)+ added_mass;
     end   
 end
 
 %determine value of center bin: 
-centerValue = Nsamples - 2*sum(shiftedHistogram(i:end))-1; % 为什么要减1
+centerValue = Nsamples - 2*sum(shiftedHistogram(i:end))-1; % why substract 1?
 
 %complete right side with mirror image
 symUniHistogram = [shiftedHistogram(end:-1:i);centerValue;shiftedHistogram(i:end)];

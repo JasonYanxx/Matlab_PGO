@@ -1,14 +1,12 @@
-% 创建一个图形窗口
 clear all
 close all
 figure;
 
-% 设置动画的时间步长和总时间
+% set step size (dt) and total time (T) for animation
 st= 30;
 dt = 5;
 T = 45;
 
-% 加载数据
 load('Data/urban_dd_0816/mergeurbandd.mat');
 filter_err=(mergedurbandd.doubledifferenced_pseudorange_error>=-15 & mergedurbandd.doubledifferenced_pseudorange_error<=15); 
 filter_ele=(mergedurbandd.U2I_Elevation>=st & mergedurbandd.U2I_Elevation<=st+dt);
@@ -16,7 +14,7 @@ Xdata=mergedurbandd.doubledifferenced_pseudorange_error(filter_ele & filter_err)
 Nsamples=length(Xdata);
 lim=max(-min(Xdata),max(Xdata));
 x = linspace(-lim, lim, Nsamples);
-% 绘制初始图形
+% plot initial figure
 histogram(Xdata,'normalization','pdf');
 hold on
 % EM fitting
@@ -30,22 +28,22 @@ set(gca, 'FontSize', 18,'FontName', 'Times New Roman');
 drawnow;
 pause(0.3);
 
-% 循环更新数据和绘图
+% update
 for t = dt:dt:T
-    % 更新数据
+    % update data
     alpha=1+t;
     
-    % 清除之前的图形
+    % clear history plots
     clf;
     
-    % 绘制新的图形
+    % plot new figures
     filter_err=(mergedurbandd.doubledifferenced_pseudorange_error>=-15 & mergedurbandd.doubledifferenced_pseudorange_error<=15); 
     filter_ele=(mergedurbandd.U2I_Elevation>=st & mergedurbandd.U2I_Elevation<=st+dt+t);
     Xdata=mergedurbandd.doubledifferenced_pseudorange_error(filter_ele & filter_err);
     Nsamples=length(Xdata);
     lim=max(-min(Xdata),max(Xdata));
     x = linspace(-lim, lim, Nsamples);
-    % 绘制初始图形
+    % plot initial figure
     histogram(Xdata,'normalization','pdf');
     hold on
     % EM fitting
@@ -58,7 +56,7 @@ for t = dt:dt:T
     set(gca, 'FontSize', 18,'FontName', 'Times New Roman');
     drawnow;
     
-    % 将当前帧保存为GIF文件的一部分
+    % save current snapshot into GIF
     frame = getframe(gcf);
     im = frame2im(frame);
     [imind, cm] = rgb2ind(im, 256);
@@ -68,6 +66,6 @@ for t = dt:dt:T
         imwrite(imind, cm, 'gmmfit.gif', 'gif', 'WriteMode', 'append', 'DelayTime', 0.3);
     end
     
-    % 暂停一段时间以使动画看起来更平滑
+    % make the animation more smooth
     pause(0.3);
 end

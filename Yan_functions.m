@@ -360,7 +360,7 @@ function [params,pdf_overbound,cdf_overbound]=Principal_Gaussian_bound(Xdata,x_l
     p1=gmm_dist.ComponentProportion(1);
     p2=1-p1;
 
-    % »ùÓÚbayes' method ¼ÆËãs1, s2 ·Ö²¼
+    % ï¿½ï¿½ï¿½ï¿½bayes' method ï¿½ï¿½ï¿½ï¿½s1, s2 ï¿½Ö²ï¿½
     if isempty(x_lin)
         lim=max(-min(Xdata),max(Xdata));
         x= linspace(-lim, lim, length(Xdata));
@@ -376,7 +376,7 @@ function [params,pdf_overbound,cdf_overbound]=Principal_Gaussian_bound(Xdata,x_l
         s2_list(j)=s2;
     end
 
-    % ¼ÆËã s1 ºÍ s2 µÄ·ÖÎ»µã
+    % ï¿½ï¿½ï¿½ï¿½ s1 ï¿½ï¿½ s2 ï¿½Ä·ï¿½Î»ï¿½ï¿½
     s1_half=s1_list(1:round(Nsamples/2));
     idx_xL1p=binary_search(s1_half, max(min(s1_list),thr*max(s1_list)));
     xL1p=x(idx_xL1p);
@@ -468,14 +468,14 @@ function [T1trans_pdf,cdf_T1transpp_right,cdf_T1transpp_left]=T1transpp_bound(Xd
     end
 
 
-    % ´ÓÓÒ²à¿ªÊ¼ËãÀÛ»ý·Ö²¼
+    % ï¿½ï¿½ï¿½Ò²à¿ªÊ¼ï¿½ï¿½ï¿½Û»ï¿½ï¿½Ö²ï¿½
     T1transpp_inverse = flip(T1trans_pdf);
     cdf_T1transpp_right = cumtrapz(T1transpp_inverse);
     % cdf_T1transpp_right = cdf_T1transpp_right / max(cdf_T1transpp_right);% normalization
     cdf_T1transpp_right=cdf_T1transpp_right*(x_lin(2)-x_lin(1));
     cdf_T1transpp_right=flip(cdf_T1transpp_right);
 
-    % ´Ó×ó²à¿ªÊ¼ËãÀÛ»ý·Ö²¼
+    % ï¿½ï¿½ï¿½ï¿½à¿ªÊ¼ï¿½ï¿½ï¿½Û»ï¿½ï¿½Ö²ï¿½
     cdf_T1transpp_left = cumtrapz(T1trans_pdf);
     % cdf_T1transpp_left = cdf_T1transpp_left / max(cdf_T1transpp_left);% normalization
     cdf_T1transpp_left=cdf_T1transpp_left*(x_lin(2)-x_lin(1));
@@ -483,20 +483,19 @@ function [T1trans_pdf,cdf_T1transpp_right,cdf_T1transpp_left]=T1transpp_bound(Xd
 end
 
 function [s1_list,s2_list]=gen_s1_s2(x_lin,Xdata,gmm_dist,add_mu,ax)
-    YanFun=Yan_functions;
     mu1=gmm_dist.mu(1)+add_mu;
     mu2=gmm_dist.mu(2)+add_mu;
     sigma1=gmm_dist.Sigma(1);
     sigma2=gmm_dist.Sigma(2);
     p1=gmm_dist.ComponentProportion(1);
     p2=1-p1;
-    % »ùÓÚbayes' method ¼ÆËãs1, s2 ·Ö²¼
+    % ï¿½ï¿½ï¿½ï¿½bayes' method ï¿½ï¿½ï¿½ï¿½s1, s2 ï¿½Ö²ï¿½
     x=x_lin;
     Nsamples=length(x);
     s1_list=zeros(1,Nsamples);
     s2_list=zeros(1,Nsamples);
     for j=1:Nsamples
-        [s1,s2]=YanFun.cal_omega(x(j),mu1,sigma1,p1,mu2,sigma2,p2);
+        [s1,s2]=cal_omega(x(j),mu1,sigma1,p1,mu2,sigma2,p2);
         s1_list(j)=s1;
         s2_list(j)=s2;
     end
@@ -586,12 +585,11 @@ end
 
 %% Protection level
 function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(scale_list,x_scale,std_tsgo,params_pgo,PHMI)
-    YanFun=Yan_functions;
     if scale_list(1)==0
         return
     end
     fft_time_all=0;
-    [func_conv,~,~]=YanFun.two_piece_pdf(x_scale/scale_list(1),params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ½âÎöÊ½Çó½â
+    [func_conv,~,~]=two_piece_pdf(x_scale/scale_list(1),params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½
     x_conv=x_scale;
     
     coeff=abs(1/scale_list(1));
@@ -602,9 +600,9 @@ function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL(scale_list,x_scale,std_tsgo,pa
             error('s=0');
         end
 
-        [func_scale,~,~]=YanFun.two_piece_pdf(x_scale/s,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ½âÎöÊ½Çó½â
+        [func_scale,~,~]=two_piece_pdf(x_scale/s,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½
 %         func_conv=conv(func_conv,func_scale)*0.01; % convolution
-        [func_conv,x_conv,fft_time]=YanFun.distConv_org(x_conv,x_scale,func_conv,func_scale,"fft"); % fft
+        [func_conv,x_conv,fft_time]=distConv_org(x_conv,x_scale,func_conv,func_scale,"fft"); % fft
         coeff=coeff*abs(1/s);
         fft_time_all=fft_time_all+fft_time;
 %         plot(x_conv,func_conv);
@@ -644,13 +642,12 @@ end
 
 %% Protection level - different nominal model
 function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL_ex(scale_list,x_scale,tsgo_current_cells,pgo_current_cells,PHMI)
-    YanFun=Yan_functions;
     if scale_list(1)==0
         return
     end
     fft_time_all=0;
     params_pgo = pgo_current_cells{1};
-    [func_conv,~,~]=YanFun.two_piece_pdf(x_scale/scale_list(1),params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ½âÎöÊ½Çó½â
+    [func_conv,~,~]=two_piece_pdf(x_scale/scale_list(1),params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½
     x_conv=x_scale;
     
     coeff=abs(1/scale_list(1));
@@ -661,9 +658,9 @@ function [PL_pgo,PL_gaussian,fft_time_all]=cal_PL_ex(scale_list,x_scale,tsgo_cur
             error('s=0');
         end
         params_pgo = pgo_current_cells{i};
-        [func_scale,~,~]=YanFun.two_piece_pdf(x_scale/s,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ½âÎöÊ½Çó½â
+        [func_scale,~,~]=two_piece_pdf(x_scale/s,params_pgo.gmm_dist,params_pgo.xL2p,params_pgo.xR2p); % ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½
 %         func_conv=conv(func_conv,func_scale)*0.01; % convolution
-        [func_conv,x_conv,fft_time]=YanFun.distConv_org(x_conv,x_scale,func_conv,func_scale,"fft"); % fft
+        [func_conv,x_conv,fft_time]=distConv_org(x_conv,x_scale,func_conv,func_scale,"fft"); % fft
         coeff=coeff*abs(1/s);
         fft_time_all=fft_time_all+fft_time;
 %         plot(x_conv,func_conv);
@@ -704,7 +701,7 @@ end
 
 %% FDE
 function [gmm_state]=geneStateGMM(gmm_dist,num)
-    % Éú³Éstate error µÄGMM (zero-mean)
+    % ï¿½ï¿½ï¿½ï¿½state error ï¿½ï¿½GMM (zero-mean)
     mu1=gmm_dist.mu(1);
     mu2=gmm_dist.mu(2);
     sigma1=gmm_dist.Sigma(1);
@@ -714,7 +711,7 @@ function [gmm_state]=geneStateGMM(gmm_dist,num)
     p_group=[p1;p2];
     s_group=[sigma1;sigma2];
         
-    [P{1:num}] = ndgrid(p_group); % Ê¹ÓÃndgridº¯ÊýÏòÁ¿»¯Ñ­»·
+    [P{1:num}] = ndgrid(p_group); % Ê¹ï¿½ï¿½ndgridï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½
     [S{1:num}] = ndgrid(s_group);
     prob_c = P{1};
     sigma_c = S{1};
@@ -722,16 +719,16 @@ function [gmm_state]=geneStateGMM(gmm_dist,num)
         prob_c = bsxfun(@times, prob_c, P{i});
         sigma_c = sigma_c + S{i};
     end
-    prob_list = prob_c(:)'; % ½«prob_cºÍsigma_cÁ¬½Ó³ÉÒ»Î¬Êý×é
+    prob_list = prob_c(:)'; % ï¿½ï¿½prob_cï¿½ï¿½sigma_cï¿½ï¿½ï¿½Ó³ï¿½Ò»Î¬ï¿½ï¿½ï¿½ï¿½
     sigma_list = sigma_c(:)';
 
     comps=length(sigma_list);
     sigma_all=num2cell(sigma_list);
-    gmm_state = gmdistribution(zeros(comps,1), cat(3, sigma_all{:}), prob_list); % Éú³Éstate error µÄGMM·Ö²¼
+    gmm_state = gmdistribution(zeros(comps,1), cat(3, sigma_all{:}), prob_list); % ï¿½ï¿½ï¿½ï¿½state error ï¿½ï¿½GMMï¿½Ö²ï¿½
 end
 
 function [FA_o,MD_o]=FDE_Gaussian(alpha,seed,num,gmm_dist,bias,sigma)
-    % Éú³É¹Û²âÊý¾Ý£¨²Ð²î£©£¬Ã¿×é6¸ö¹Û²â£¬Ò»¹²10000×é (false alarm)
+    % ï¿½ï¿½ï¿½É¹Û²ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½Ð²î£©ï¿½ï¿½Ã¿ï¿½ï¿½6ï¿½ï¿½ï¿½Û²â£¬Ò»ï¿½ï¿½10000ï¿½ï¿½ (false alarm)
     N=10000;
     T_o_arr=zeros(N,1);
     rng(seed);
@@ -740,9 +737,9 @@ function [FA_o,MD_o]=FDE_Gaussian(alpha,seed,num,gmm_dist,bias,sigma)
         rk=rk_all((i-1)*num+1:i*num);
         T_o_arr(i)=rk'*rk/sigma;
     end
-    FA_o=sum(sum(T_o_arr>chi2inv(1-alpha,num-1)))/N; % ÊÇ·ñ¼õÈ¥DOF
+    FA_o=sum(sum(T_o_arr>chi2inv(1-alpha,num-1)))/N; % ï¿½Ç·ï¿½ï¿½È¥DOF
     
-    % Ã¿×é6¸ö¹Û²â£¨Ä³¸ö¹Û²â×¢ÈëÒ»¶¨µÄbias£©£¬Ò»¹²10000×é (miss detection)
+    % Ã¿ï¿½ï¿½6ï¿½ï¿½ï¿½Û²â£¨Ä³ï¿½ï¿½ï¿½Û²ï¿½×¢ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½biasï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½10000ï¿½ï¿½ (miss detection)
     T_o_arr2=zeros(N,1);
     rng(seed);
     rk_all = random(gmm_dist, num*N);
@@ -751,7 +748,7 @@ function [FA_o,MD_o]=FDE_Gaussian(alpha,seed,num,gmm_dist,bias,sigma)
         rk(1)=bias;
         T_o_arr2(i)=rk'*rk/sigma;
     end
-    MD_o=1-sum(sum(T_o_arr2>chi2inv(1-alpha,num-1)))/N; % ÊÇ·ñ¼õÈ¥DOF
+    MD_o=1-sum(sum(T_o_arr2>chi2inv(1-alpha,num-1)))/N; % ï¿½Ç·ï¿½ï¿½È¥DOF
 end
 
 function [FA_o,MD_o]=FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,method)
@@ -761,7 +758,7 @@ function [FA_o,MD_o]=FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,method)
     sigma2=gmm_dist.Sigma(2);
     p1=gmm_dist.ComponentProportion(1);
     p2=1-p1;
-    % Éú³É¹Û²âÊý¾Ý£¨²Ð²î£©£¬Ã¿×é6¸ö¹Û²â£¬Ò»¹²10000×é (false alarm)
+    % ï¿½ï¿½ï¿½É¹Û²ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½Ð²î£©ï¿½ï¿½Ã¿ï¿½ï¿½6ï¿½ï¿½ï¿½Û²â£¬Ò»ï¿½ï¿½10000ï¿½ï¿½ (false alarm)
     N=10000;
     T_o_arr_max=zeros(N,1);
     T_o_arr_sum=zeros(N,1);
@@ -769,7 +766,7 @@ function [FA_o,MD_o]=FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,method)
     rk_all = random(gmm_dist, num*N);
     for i=1:N
         rk=rk_all((i-1)*num+1:i*num);       
-        % Ê¹ÓÃBayes method (seperate approach) ¼ÆËãÍ³¼ÆÁ¿
+        % Ê¹ï¿½ï¿½Bayes method (seperate approach) ï¿½ï¿½ï¿½ï¿½Í³ï¿½ï¿½ï¿½ï¿½
         T1_list=[];
         for j=1:num
             [s1,s2]=cal_omega(rk(j),mu1,sigma1,p1,mu2,sigma2,p2);
@@ -780,12 +777,12 @@ function [FA_o,MD_o]=FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,method)
         T_o_arr_sum(i)=sum(T1_list);
     end
     if method == "sum"
-        FA_o=sum(sum(T_o_arr_sum>chi2inv(1-alpha,num-1)))/N; % ÊÇ·ñ¼õÈ¥DOF
+        FA_o=sum(sum(T_o_arr_sum>chi2inv(1-alpha,num-1)))/N; % ï¿½Ç·ï¿½ï¿½È¥DOF
     elseif method == "max"
         FA_o=sum(sum(T_o_arr_max>chi2inv(1-alpha,1)))/(N*num);
     end
     
-    % Ã¿×é6¸ö¹Û²â£¨Ä³¸ö¹Û²â×¢ÈëÒ»¶¨µÄbias£©£¬Ò»¹²10000×é (miss detection)
+    % Ã¿ï¿½ï¿½6ï¿½ï¿½ï¿½Û²â£¨Ä³ï¿½ï¿½ï¿½Û²ï¿½×¢ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½biasï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½10000ï¿½ï¿½ (miss detection)
     T_o_arr_max2=zeros(N,1);
     T_o_arr_sum2=zeros(N,1);
     rng(seed);
@@ -793,7 +790,7 @@ function [FA_o,MD_o]=FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,method)
     for i=1:N
         rk=rk_all((i-1)*num+1:i*num);
         rk(1)=bias;
-        % Ê¹ÓÃBayes method (seperate approach) ¼ÆËãÍ³¼ÆÁ¿
+        % Ê¹ï¿½ï¿½Bayes method (seperate approach) ï¿½ï¿½ï¿½ï¿½Í³ï¿½ï¿½ï¿½ï¿½
         T1_list=[];
         for j=1:num
             [s1,s2]=cal_omega(rk(j),mu1,sigma1,p1,mu2,sigma2,p2);
@@ -804,7 +801,7 @@ function [FA_o,MD_o]=FDE_BayesGMM_seperate(alpha,seed,num,gmm_dist,bias,method)
         T_o_arr_sum2(i)=sum(T1_list);
     end
     if method == "sum"
-        MD_o=1-sum(sum(T_o_arr_sum2>chi2inv(1-alpha,num-1)))/N; % ÊÇ·ñ¼õÈ¥DOF
+        MD_o=1-sum(sum(T_o_arr_sum2>chi2inv(1-alpha,num-1)))/N; % ï¿½Ç·ï¿½ï¿½È¥DOF
     elseif method == "max"
         MD_o=1-sum(sum(T_o_arr_max2>chi2inv(1-alpha,1)))/(N*num);
     end
@@ -816,7 +813,7 @@ function [FA_arr,MD_arr,var_arr]=FDE_mc_compare(alpha,seed,num)
     MD_arr=zeros(N,4);
     var_arr=zeros(N,1);
     for i=1:N
-        %¶¨ÒåÎó²î·Ö²¼
+        %ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö²ï¿½
         % varing sigma2
         % p1=0.98;
         % p2=1-p1;
@@ -1010,7 +1007,7 @@ function y = nig_pdf(data)
     % below is the setting in "Rife, J., Pullen, S., & Pervan, B. (2004).
     % Core Overbounding and its Implications for LAAS Integrity. Proceedings 
     % of the 17th International Technical Meeting of the Satellite Division of 
-    % The Institute of Navigation (ION GNSS 2004), 2810¨C2821." with M=1
+    % The Institute of Navigation (ION GNSS 2004), 2810ï¿½C2821." with M=1
     mu=0;
     alpha=0.65;
     delta=0.65;
@@ -1110,7 +1107,7 @@ function [pdf_piece_fun,k,cc]=two_piece_pdf(x,gmm_dist,xL2p,xR2p)
     sigma2=gmm_dist.Sigma(2);
     p1=gmm_dist.ComponentProportion(1);
     p2=1-p1;
-    % ¼ÆËã·Ö¶Îº¯ÊýµÄpdf -- two piece
+    % ï¿½ï¿½ï¿½ï¿½Ö¶Îºï¿½ï¿½ï¿½ï¿½ï¿½pdf -- two piece
     Nsamples=length(x);
     pdf_piece_fun=zeros(1,Nsamples);
     k=p1*normcdf(xL2p,mu1,sqrt(sigma1))/(p2*normcdf(xL2p,mu2,sqrt(sigma2)));
@@ -1136,7 +1133,7 @@ function [pdf_piece_fun]=three_piece_pdf(x,gmm_dist,xL2p,xR2p,xL1p,xR1p)
     sigma2=gmm_dist.Sigma(2);
     p1=gmm_dist.ComponentProportion(1);
     p2=1-p1;
-    % ¼ÆËã·Ö¶Îº¯ÊýµÄpdf -- three piece
+    % ï¿½ï¿½ï¿½ï¿½Ö¶Îºï¿½ï¿½ï¿½ï¿½ï¿½pdf -- three piece
     Nsamples=length(x);
     pdf_piece_fun=zeros(1,Nsamples);
     k=p1*normcdf(xL2p,mu1,sqrt(sigma1))/(p2*normcdf(xL2p,mu2,sqrt(sigma2)));
@@ -1169,7 +1166,7 @@ function [cdf_piece_fun_join]=two_piece_cdf(x,gmm_dist,xL2p,xR2p,idx_xL2p,idx_xR
     sigma2=gmm_dist.Sigma(2);
     p1=gmm_dist.ComponentProportion(1);
     p2=1-p1;
-    % ¼ÆËã·Ö¶Îº¯ÊýµÄpdf -- two piece
+    % ï¿½ï¿½ï¿½ï¿½Ö¶Îºï¿½ï¿½ï¿½ï¿½ï¿½pdf -- two piece
     Nsamples=length(x);
     k=p1*normcdf(xL2p,mu1,sqrt(sigma1))/(p2*normcdf(xL2p,mu2,sqrt(sigma2)));
     cc=p2*(normcdf(xL2p,mu2,sqrt(sigma2))-0.5)/xL2p;
@@ -1200,7 +1197,7 @@ function [cdf_piece_fun_join]=three_piece_cdf(x,gmm_dist,xL2p,xR2p,idx_xL2p,idx_
     sigma2=gmm_dist.Sigma(2);
     p1=gmm_dist.ComponentProportion(1);
     p2=1-p1;
-    % ¼ÆËã·Ö¶Îº¯ÊýµÄpdf -- two piece
+    % ï¿½ï¿½ï¿½ï¿½Ö¶Îºï¿½ï¿½ï¿½ï¿½ï¿½pdf -- two piece
     Nsamples=length(x);
     k=p1*normcdf(xL2p,mu1,sqrt(sigma1))/(p2*normcdf(xL2p,mu2,sqrt(sigma2)));
     rme_left=p2*normcdf(xL2p,mu2,sqrt(sigma2))+p2*normpdf(xL1p,mu2,sqrt(sigma2))*(xL1p-xL2p)-0.5*p2;
@@ -1253,7 +1250,7 @@ function idx = binary_search(arr, target)
             right = mid - 1;
         end
     end
-    idx = -1;  % Èç¹ûÎ´ÕÒµ½Ä¿±êÖµ£¬·µ»Ø-1
+    idx = -1;  % ï¿½ï¿½ï¿½Î´ï¿½Òµï¿½Ä¿ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-1
 end
 
 
@@ -1262,12 +1259,12 @@ function [gmm_dist]=gene_GMM_EM_zeroMean(Xdata)
     D=size(samples,2);
     N=size(samples,1);
 
-    K=2;%ÓÃK¸öÕýÌ¬·Ö²¼ÄâºÏ
+    K=2;%ï¿½ï¿½Kï¿½ï¿½ï¿½ï¿½Ì¬ï¿½Ö²ï¿½ï¿½ï¿½ï¿½
     Pi=ones(1,K)/K;
 %     Pi=[0.9 0.1];
     Miu={0;0};
     Sigma2=cell(K,1);
-%     %% %K¾ùÖµ¾ÛÀàÈ·¶¨³õÖµ
+%     %% %Kï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½Öµ
 %     [idx,center]=kmeans(samples,K);
 %     for i=1:K
 % %         miu0=center(i,:);
@@ -1275,7 +1272,7 @@ function [gmm_dist]=gene_GMM_EM_zeroMean(Xdata)
 % %         Miu{i,1}=miu0;
 %         Sigma2{i,1}=sigma0;
 %     end
-   %%  È·¶¨³õÖµ
+   %%  È·ï¿½ï¿½ï¿½ï¿½Öµ
     if K==2
         Sigma2{1,1}=var(samples(abs(samples)<quantile(samples,1-0.05))); %core area
         Sigma2{2,1}=var(samples(abs(samples)>quantile(samples,1-0.05))); %tail area
@@ -1284,9 +1281,9 @@ function [gmm_dist]=gene_GMM_EM_zeroMean(Xdata)
     beta=inf;
     likelihood_function_value=0;
     record=[];
-    %% %EMËã·¨
+    %% %EMï¿½ã·¨
     while(1)
-        %% %E²½
+        %% %Eï¿½ï¿½
         gama=zeros(N,K); % membership weight
         samples_pd=zeros(N,K);
         for j=1:K
@@ -1306,7 +1303,7 @@ function [gmm_dist]=gene_GMM_EM_zeroMean(Xdata)
 %             plot(1:length(record),record)
             break
         end
-        %% %M²½
+        %% %Mï¿½ï¿½
         Nk=sum(gama,1);
         for j=1:K
             Miu{j,1}=zeros(1,D);
@@ -1336,12 +1333,12 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_loose(Xdata)
     D=size(samples,2);
     N=size(samples,1);
 
-    K=2;%ÓÃK¸öÕýÌ¬·Ö²¼ÄâºÏ
+    K=2;%ï¿½ï¿½Kï¿½ï¿½ï¿½ï¿½Ì¬ï¿½Ö²ï¿½ï¿½ï¿½ï¿½
     Pi=ones(1,K)/K;
 %     Pi=[0.9 0.1];
     Miu={0;0};
     Sigma2=cell(K,1);
-%     %% %K¾ùÖµ¾ÛÀàÈ·¶¨³õÖµ
+%     %% %Kï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½Öµ
 %     [idx,center]=kmeans(samples,K);
 %     for i=1:K
 % %         miu0=center(i,:);
@@ -1349,7 +1346,7 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_loose(Xdata)
 % %         Miu{i,1}=miu0;
 %         Sigma2{i,1}=sigma0;
 %     end
-   %%  È·¶¨³õÖµ
+   %%  È·ï¿½ï¿½ï¿½ï¿½Öµ
     if K==2
         Sigma2{1,1}=var(samples); 
         Sigma2{2,1}=var(samples)*1.5;
@@ -1358,9 +1355,9 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_loose(Xdata)
     beta=inf;
     likelihood_function_value=0;
     record=[];
-    %% %EMËã·¨
+    %% %EMï¿½ã·¨
     while(1)
-        %% %E²½
+        %% %Eï¿½ï¿½
         gama=zeros(N,K); % membership weight
         samples_pd=zeros(N,K);
         for j=1:K
@@ -1380,7 +1377,7 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_loose(Xdata)
 %             plot(1:length(record),record)
             break
         end
-        %% %M²½
+        %% %Mï¿½ï¿½
         Nk=sum(gama,1);
         for j=1:K
             Miu{j,1}=zeros(1,D);
@@ -1408,12 +1405,12 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_tailall(Xdata)
     D=size(samples,2);
     N=size(samples,1);
 
-    K=2;%ÓÃK¸öÕýÌ¬·Ö²¼ÄâºÏ
+    K=2;%ï¿½ï¿½Kï¿½ï¿½ï¿½ï¿½Ì¬ï¿½Ö²ï¿½ï¿½ï¿½ï¿½
     Pi=ones(1,K)/K;
 %     Pi=[0.9 0.1];
     Miu={0;0};
     Sigma2=cell(K,1);
-%     %% %K¾ùÖµ¾ÛÀàÈ·¶¨³õÖµ
+%     %% %Kï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½Öµ
 %     [idx,center]=kmeans(samples,K);
 %     for i=1:K
 % %         miu0=center(i,:);
@@ -1421,7 +1418,7 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_tailall(Xdata)
 % %         Miu{i,1}=miu0;
 %         Sigma2{i,1}=sigma0;
 %     end
-   %%  È·¶¨³õÖµ
+   %%  È·ï¿½ï¿½ï¿½ï¿½Öµ
     if K==2
         Sigma2{1,1}=var(samples(abs(samples)<quantile(samples,1-0.05))); %core area
         Sigma2{2,1}=var(samples); % all area including the tail area
@@ -1430,9 +1427,9 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_tailall(Xdata)
     beta=inf;
     likelihood_function_value=0;
     record=[];
-    %% %EMËã·¨
+    %% %EMï¿½ã·¨
     while(1)
-        %% %E²½
+        %% %Eï¿½ï¿½
         gama=zeros(N,K); % membership weight
         samples_pd=zeros(N,K);
         for j=1:K
@@ -1452,7 +1449,7 @@ function [gmm_dist]=gene_GMM_EM_zeroMean_tailall(Xdata)
 %             plot(1:length(record),record)
             break
         end
-        %% %M²½
+        %% %Mï¿½ï¿½
         Nk=sum(gama,1);
         for j=1:K
             Miu{j,1}=zeros(1,D);
@@ -1497,12 +1494,12 @@ function [gmm_dist]=gene_GMM_EM(Xdata)
     D=size(samples,2);
     N=size(samples,1);
 
-    K=2;%ÓÃK¸öÕýÌ¬·Ö²¼ÄâºÏ
+    K=2;%ï¿½ï¿½Kï¿½ï¿½ï¿½ï¿½Ì¬ï¿½Ö²ï¿½ï¿½ï¿½ï¿½
     Pi=ones(1,K)/K;
     Pi=[0.9 0.1];
     Miu={0;0};
     Sigma2=cell(K,1);
-    %% %K¾ùÖµ¾ÛÀàÈ·¶¨³õÖµ
+    %% %Kï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½Öµ
     [idx,center]=kmeans(samples,K);
     miu0=center(1,:);
     for i=1:K
@@ -1515,9 +1512,9 @@ function [gmm_dist]=gene_GMM_EM(Xdata)
     beta=inf;
     likelihood_function_value=0;
     record=[];
-    %% %EMËã·¨
+    %% %EMï¿½ã·¨
     while(1)
-        %% %E²½
+        %% %Eï¿½ï¿½
         gama=zeros(N,K); % membership weight
         samples_pd=zeros(N,K);
         for j=1:K
@@ -1537,7 +1534,7 @@ function [gmm_dist]=gene_GMM_EM(Xdata)
 %             plot(1:length(record),record)
             break
         end
-        %% %M²½
+        %% %Mï¿½ï¿½
         Nk=sum(gama,1);
         for j=1:K
             for i=1:N
