@@ -29,6 +29,7 @@ YanFun.T1transpp_bound=@T1transpp_bound;
 YanFun.gen_s1_s2=@gen_s1_s2;
 YanFun.compare_twoside_bound=@compare_twoside_bound;
 YanFun.gene_GMM_EM_zeroMean=@gene_GMM_EM_zeroMean;
+YanFun.gene_GMM_EM_zeroMean_loose=@gene_GMM_EM_zeroMean_loose;
 YanFun.cal_omega=@cal_omega;
 YanFun.binary_search=@binary_search;
 YanFun.inflate_GMM=@inflate_GMM;
@@ -1257,9 +1258,7 @@ end
 
 
 function [gmm_dist]=gene_GMM_EM_zeroMean(Xdata)
-
     samples =Xdata;
-
     D=size(samples,2);
     N=size(samples,1);
 
@@ -1330,6 +1329,153 @@ function [gmm_dist]=gene_GMM_EM_zeroMean(Xdata)
     gmm_dist = gmdistribution(vertcat(Miu{:}), cat(3, Sigma2{:}), Pi);
 end
 
+function [gmm_dist]=gene_GMM_EM_zeroMean_loose(Xdata)
+
+    samples =Xdata;
+
+    D=size(samples,2);
+    N=size(samples,1);
+
+    K=2;%用K个正态分布拟合
+    Pi=ones(1,K)/K;
+%     Pi=[0.9 0.1];
+    Miu={0;0};
+    Sigma2=cell(K,1);
+%     %% %K均值聚类确定初值
+%     [idx,center]=kmeans(samples,K);
+%     for i=1:K
+% %         miu0=center(i,:);
+%         sigma0=var(samples(find(idx==i),:));
+% %         Miu{i,1}=miu0;
+%         Sigma2{i,1}=sigma0;
+%     end
+   %%  确定初值
+    if K==2
+        Sigma2{1,1}=var(samples); 
+        Sigma2{2,1}=var(samples)*1.5;
+    end
+
+    beta=inf;
+    likelihood_function_value=0;
+    record=[];
+    %% %EM算法
+    while(1)
+        %% %E步
+        gama=zeros(N,K); % membership weight
+        samples_pd=zeros(N,K);
+        for j=1:K
+            samples_pd(:,j)=normpdf(samples,Miu{j,1},sqrt(Sigma2{j,1}));
+        end
+        for i=1:N
+            for j=1:K
+                gama(i,j)=Pi(j)*samples_pd(i,j)/(Pi*samples_pd(i,:)');
+            end
+        end
+
+        likelihood_function_value_old=likelihood_function_value;
+        likelihood_function_value=sum(log(sum(samples_pd.*repmat(Pi,N,1),1)));
+        record=[record,likelihood_function_value];
+        beta=abs(likelihood_function_value-likelihood_function_value_old);    
+        if beta<1e-6
+%             plot(1:length(record),record)
+            break
+        end
+        %% %M步
+        Nk=sum(gama,1);
+        for j=1:K
+            Miu{j,1}=zeros(1,D);
+            Sigma2{j,1}=zeros(D,D);
+%             for i=1:N
+%                 Miu{j,1}=Miu{j,1}+gama(i,j)*samples(i,:)/Nk(j);
+%             end 
+            for i=1:N
+                Sigma2{j,1}=Sigma2{j,1}+(gama(i,j)*(samples(i,:)-Miu{j,1})'*(samples(i,:)-Miu{j,1}))/Nk(j);
+            end
+        end
+        Pi=Nk/N;
+    end
+    
+    % exchange components: Sort in acscending order of sigma
+    [~, idx] =sort(cell2mat(Sigma2)', 'ascend');
+    Pi=Pi(idx);
+    Miu = Miu(idx);
+    Sigma2 = Sigma2(idx);
+    gmm_dist = gmdistribution(vertcat(Miu{:}), cat(3, Sigma2{:}), Pi);
+end
+
+function [gmm_dist]=gene_GMM_EM_zeroMean_tailall(Xdata)
+    samples =Xdata;
+    D=size(samples,2);
+    N=size(samples,1);
+
+    K=2;%用K个正态分布拟合
+    Pi=ones(1,K)/K;
+%     Pi=[0.9 0.1];
+    Miu={0;0};
+    Sigma2=cell(K,1);
+%     %% %K均值聚类确定初值
+%     [idx,center]=kmeans(samples,K);
+%     for i=1:K
+% %         miu0=center(i,:);
+%         sigma0=var(samples(find(idx==i),:));
+% %         Miu{i,1}=miu0;
+%         Sigma2{i,1}=sigma0;
+%     end
+   %%  确定初值
+    if K==2
+        Sigma2{1,1}=var(samples(abs(samples)<quantile(samples,1-0.05))); %core area
+        Sigma2{2,1}=var(samples); % all area including the tail area
+    end
+
+    beta=inf;
+    likelihood_function_value=0;
+    record=[];
+    %% %EM算法
+    while(1)
+        %% %E步
+        gama=zeros(N,K); % membership weight
+        samples_pd=zeros(N,K);
+        for j=1:K
+            samples_pd(:,j)=normpdf(samples,Miu{j,1},sqrt(Sigma2{j,1}));
+        end
+        for i=1:N
+            for j=1:K
+                gama(i,j)=Pi(j)*samples_pd(i,j)/(Pi*samples_pd(i,:)');
+            end
+        end
+
+        likelihood_function_value_old=likelihood_function_value;
+        likelihood_function_value=sum(log(sum(samples_pd.*repmat(Pi,N,1),1)));
+        record=[record,likelihood_function_value];
+        beta=abs(likelihood_function_value-likelihood_function_value_old);    
+        if beta<1e-6
+%             plot(1:length(record),record)
+            break
+        end
+        %% %M步
+        Nk=sum(gama,1);
+        for j=1:K
+            Miu{j,1}=zeros(1,D);
+            Sigma2{j,1}=zeros(D,D);
+%             for i=1:N
+%                 Miu{j,1}=Miu{j,1}+gama(i,j)*samples(i,:)/Nk(j);
+%             end 
+            for i=1:N
+                Sigma2{j,1}=Sigma2{j,1}+(gama(i,j)*(samples(i,:)-Miu{j,1})'*(samples(i,:)-Miu{j,1}))/Nk(j);
+            end
+        end
+        Pi=Nk/N;
+    end
+    
+    % exchange components: Sort in acscending order of sigma
+    [~, idx] =sort(cell2mat(Sigma2)', 'ascend');
+    Pi=Pi(idx);
+    Miu = Miu(idx);
+    Sigma2 = Sigma2(idx);
+    gmm_dist = gmdistribution(vertcat(Miu{:}), cat(3, Sigma2{:}), Pi);
+end
+
+
 function [inflate_dist]=inflate_GMM(gmm_dist,inflation_factor1,inflation_factor2)
     mu1=gmm_dist.mu(1);
     mu2=gmm_dist.mu(2);
@@ -1344,7 +1490,7 @@ function [inflate_dist]=inflate_GMM(gmm_dist,inflation_factor1,inflation_factor2
     inflate_dist = gmdistribution([mu1; mu2], cat(3, sigma1, sigma2), [p1 p2]);
 end
 
-function [gmm_dist]=gene_GMM_EM_onebias(Xdata)
+function [gmm_dist]=gene_GMM_EM(Xdata)
 
     samples =Xdata;
 
@@ -1399,11 +1545,11 @@ function [gmm_dist]=gene_GMM_EM_onebias(Xdata)
             end
         end
         for j=1:K
-%             Miu{j,1}=zeros(1,D);
+            Miu{j,1}=zeros(1,D);
             Sigma2{j,1}=zeros(D,D);
-%             for i=1:N
-%                 Miu{j,1}=Miu{j,1}+gama(i,j)*samples(i,:)/Nk(j);
-%             end 
+            for i=1:N
+                Miu{j,1}=Miu{j,1}+gama(i,j)*samples(i,:)/Nk(j);
+            end 
             for i=1:N
                 Sigma2{j,1}=Sigma2{j,1}+(gama(i,j)*(samples(i,:)-Miu{j,1})'*(samples(i,:)-Miu{j,1}))/Nk(j);
             end
