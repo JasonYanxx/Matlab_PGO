@@ -228,10 +228,10 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 
 %% 2023072 GPS data (from yihan) processing
 % % set folder path and file name
-% folder = 'Data/mnav_zmp1_jan_20240105'; 
+% folder = 'Data/mnav_zmp1_halfyear_2nd_20240410'; 
 % filePattern = fullfile(folder, '*.csv'); % using wildcard
 % csvFiles = dir(filePattern); % 
-
+% 
 % % read each csv
 % for i = 1:length(csvFiles)
 %     filename = fullfile(csvFiles(i).folder, csvFiles(i).name);
@@ -241,8 +241,8 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 % % merge
 % bigTable = vertcat(data{:});
 % % set folder path and file name
-% filename = 'merged_Ref_Jan.csv'; % new filename
-% folder = 'Data/mnav_zmp1_jan_20240105'; % path for saving new file
+% filename = 'merged_Ref_halfyear_2nd.csv'; % new filename
+% folder = 'Data/mnav_zmp1_halfyear_2nd_20240410'; % path for saving new file
 % fullPath = fullfile(folder, filename);
 % 
 % % save to csv
@@ -402,6 +402,713 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 % A = legend([h1,h21,h24,h3,h4,h5],'sample dist.','two-step left','two-step right','Gaussian Pareto','Paired Principal Gaussian','Principal Gaussian');
 % set(A,'FontSize',12)
 % set(gca, 'FontSize', 12,'FontName', 'Times New Roman');
+
+
+%% 20240322 optimization based gmm fitting
+% load('Data/mnav_zmp1_halfyear_20240322/mergedRefhalfyear.mat');
+% mergedRefAll=mergedRefhalfyear;
+% filter_date = mergedRefAll.datetime>'2020-01-01' & mergedRefAll.datetime<'2020-02-01';
+% mergedRefAll = mergedRefAll(filter_date,:);
+% item=1;
+% figure;
+% for ele = 15:5:80
+%     filter_ele=(mergedRefAll.U2I_Elevation>=ele & mergedRefAll.U2I_Elevation<=ele+5); 
+%     filter_err=(mergedRefAll.doubledifferenced_pseudorange_error>=-10 & mergedRefAll.doubledifferenced_pseudorange_error<=10); 
+%     Xdata=mergedRefAll.doubledifferenced_pseudorange_error(filter_ele & filter_err);
+%     num=length(Xdata);
+%     if num<2500
+%         continue
+%     end
+%     [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+%     NSamples=length(Xdata);
+%     lim=max(-min(Xdata),max(Xdata));
+%     x_lin = linspace(-lim, lim, NSamples);
+%     Y=Xdata';
+% 
+%     global data ecdf_sim
+%     data=sort(Y);
+%     ecdf_sim = 1/length(data):1/length(data):1;
+% 
+%     p1 = optimvar('p1');
+%     std1 = optimvar('std1');
+%     std2 = optimvar('std2');
+% 
+%     param0.p1=0.5;
+%     param0.std1=std(data);
+%     param0.std2=std(data)*2;
+% 
+%     obj_left = fcn2optimexpr(@objfunx_left,p1,std1,std2);
+%     prob_left = optimproblem('Objective',obj_left);
+%     prob_left.Constraints.constr1 = p1 <=1-0.05;
+%     prob_left.Constraints.constr2 = p1 >=0.5;
+%     prob_left.Constraints.constr3 = std1 >=std(Xdata)/2;
+%     prob_left.Constraints.constr4 = std1 <=std(Xdata);
+%     prob_left.Constraints.constr5 = std2 >=std(Xdata);
+%     prob_left.Constraints.constr6 = std2 <=40;
+%     prob_left.Constraints.constr7 = std1 <= std2;
+% 
+%     showproblem(prob_left)
+% 
+%     [sol_left,fval_left] = solve(prob_left,param0);
+% 
+% 
+%     obj_right = fcn2optimexpr(@objfunx_right,p1,std1,std2);
+%     prob_right = optimproblem('Objective',obj_right);
+%     prob_right.Constraints.constr1 = p1 <=1-0.05;
+%     prob_right.Constraints.constr2 = p1 >=0.5;
+%     prob_right.Constraints.constr3 = std1 >=0.00001;
+%     prob_right.Constraints.constr4 = std1 <=std(Xdata);
+%     prob_right.Constraints.constr5 = std2 >=std(Xdata);
+%     prob_right.Constraints.constr6 = std2 <=40;
+%     prob_right.Constraints.constr7 = std1 <= std2;
+% 
+%     showproblem(prob_right)
+% 
+%     [sol_right,fval_right] = solve(prob_right,param0);
+% 
+% 
+%     sol_new.std1 = max(sol_left.std1,sol_right.std1);
+%     sol_new.std2 = max(sol_left.std2,sol_right.std2);
+%     if objfunx_left(sol_left.p1,sol_new.std1,sol_new.std2) < objfunx_left(sol_right.p1,sol_new.std1,sol_new.std2)
+%       sol_new.p1=sol_left.p1;
+%     else
+%       sol_new.p1=sol_right.p1;
+%     end
+%     sol=sol_new;
+% 
+%     gmm_dist = gmdistribution([0;0], cat(3, sol.std1^2 ,sol.std2^2), [sol.p1,1-sol.p1]);
+%     rng(seed);
+%     Xgmm_data = random(gmm_dist, 10000);
+%     kurtosis(Xgmm_data);
+%     
+%     cdf_emp=cdf(gmm_dist,x_lin')';
+%     %  PGO
+%     alpha_adjust=max(0.5,abs(sol.std1-sol.std2)/sol.std2);
+% %     alpha_adjust=1/kurtosis(Xdata);
+%     [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,alpha_adjust);
+%     % Two step Gaussian - use symmetric twp-step bound with defaut param
+%     [params,pdf_left_tsgo,pdf_right_tsgo,cdf_left_tsgo,cdf_right_tsgo]=YanFuncLib_Overbound_tmp.two_step_bound_practical(Xdata,x_lin);
+%     % Gaussian Pareto
+%     [params_gpo,pdf_gpo,cdf_gpo]=YanFuncLib_Overbound_tmp.Gaussian_Pareto_bound(Xdata,x_lin);
+% 
+%    %% Plot Results 
+%     subplot(3,5,item)
+%     % ecdf plot
+%     h1=semilogy(x_lin_ecdf,ecdf_data,'k+','LineWidth',0.5,'MarkerSize', 2);
+%     hold on
+%     % Two step Gaussian plot
+%     h21=semilogy(x_lin(1:params.idx),cdf_left_tsgo(1:params.idx),'g','LineWidth',1);
+%     % Gaussian Pareto plot
+%     h3=semilogy(x_lin,cdf_gpo,'r','LineWidth',1);
+%     % GMM plot
+%     h4=semilogy(x_lin,cdf_emp,'m-','LineWidth',1);
+%     % PGO plot
+%     h5=semilogy(x_lin,cdf_pgo,'bd-','LineWidth',0.5,'MarkerSize', 2,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
+%     yline(0.5);
+%     xlim([min(x_lin)*1.2,max(x_lin)*0.5]);
+%     ylim([1e-6,1]);
+%     xlabel('Error (m)');
+%     ylabel('CDF (log scale)');
+% %     set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% %     A = legend([h1,h21,h3,h4,h5],'Sample dist.','Two-step Gaussian','Gaussian-Pareto','GMM fitting','Principal Gaussian');
+% %     set(A,'FontSize',13.5)
+%     grid on
+%     title(['ele: ',num2str(ele),'   alpha: ',num2str(alpha_adjust)]);
+%     item=item+1;
+% end
+%     
+% function f = objfunx_left(p1,std1,std2)
+%     global data
+%     global ecdf_sim
+%     global LeftPortion Lbig_range
+%     predict = p1*normcdf(data,0,std1)+(1-p1)*normcdf(data,0,std2);
+%     num = length(data);
+%     weights = [ecdf_sim(1:floor(num/2)),1+1/num-ecdf_sim(floor(num/2)+1:end)];
+%     weights = 1./weights;
+%     f = sum(weights.*(abs(predict-ecdf_sim)./ecdf_sim)).^2;
+% end
+% 
+% function f = objfunx_right(p1,std1,std2)
+%     global data
+%     global ecdf_sim
+%     global LeftPortion Lbig_range
+%     predict = p1*normcdf(data,0,std1)+(1-p1)*normcdf(data,0,std2);
+%     num = length(data);
+%     weights = [ecdf_sim(1:floor(num/2)),1+1/num-ecdf_sim(floor(num/2)+1:end)];
+%     weights = 1./weights;
+%     f = sum(weights.*(abs(predict-ecdf_sim)./(1-ecdf_sim+0.001))).^2;
+% end
+
+%% 20240323 explore sigma inflation
+% % load('Data/mnav_zmp1_halfyear_20240322/mergedRefhalfyear.mat');
+% % load('Data/mnav_zmp1_halfyear_2nd_20240325/mergedRefhalfyear2nd.mat');
+% % tmp = vertcat(mergedRefhalfyear, mergedRefhalfyear2nd);
+% % mergedRefAll = tmp;
+% filter_date = tmp.datetime>'2020-01-01' & tmp.datetime<'2020-02-01';
+% mergedRefAll = tmp(filter_date,:);
+% mergedRefAll.doubledifferenced_pseudorange_error = -mergedRefAll.doubledifferenced_pseudorange_error; % correct yihan's mistake
+% item=1;
+% figure;
+% for ele = 60:5:90
+%     filter_ele=(mergedRefAll.U2I_Elevation>=ele & mergedRefAll.U2I_Elevation<=ele+5); 
+%     filter_err=(mergedRefAll.doubledifferenced_pseudorange_error>=-10 & mergedRefAll.doubledifferenced_pseudorange_error<=10); 
+%     Xdata=mergedRefAll.doubledifferenced_pseudorange_error(filter_ele & filter_err);
+%     % shift the distribution to obtian zero-median
+%     Xdata = Xdata - median(Xdata);
+% %     Xdata = unique(Xdata);
+%     num=length(Xdata);
+%     if num<2500*2
+%         continue
+%     end
+%         
+%     lim=max(-min(Xdata),max(Xdata));
+%     x_lin = linspace(-lim, lim, num);
+% %     gmm_dist=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
+%     [sol,gmm_dist] = YanFuncLib_Overbound_tmp.opfit_GMM_zeroMean(Xdata);
+%     rng(seed);
+%     Xgmm_data = random(gmm_dist, 10000);
+%     kurtosis(Xgmm_data);
+%     
+%     % ecdf
+% %     [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+%     x_lin_ecdf=sort(Xdata);
+%     ecdf_data = linspace(1/length(x_lin_ecdf), 1-1/length(x_lin_ecdf), length(x_lin_ecdf))'; % a better way
+%     % gmm emp
+%     cdf_emp=cdf(gmm_dist,x_lin')';
+%     % PGO
+%     alpha_adjust=YanFuncLib_Overbound_tmp.find_alpha(Xdata,gmm_dist);
+%     alpha_adjust = min(0.5,alpha_adjust);
+% %     min_avoid_cases  = 1e10;
+% %     for alpha = 0.05:0.05:1-0.05   
+% %         [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,alpha);
+% %         predict_cdf = YanFuncLib_Overbound_tmp.two_piece_cdf(x_lin_ecdf',...
+% %                             gmm_tmp,params_pgo.xL2p,params_pgo.xR2p);
+% %         left_punish_idx = x_lin_ecdf'<0 & predict_cdf<ecdf_data';
+% %         right_punish_idx = x_lin_ecdf'>0& predict_cdf>ecdf_data';
+% %         avoid_cases = sum(left_punish_idx)+sum(right_punish_idx)
+% %         if avoid_cases<min_avoid_cases
+% %             min_avoid_cases = avoid_cases;
+% %             alpha_adjust = alpha;
+% %         end
+% %     end
+%     [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,alpha_adjust);
+%     
+%     % check and inflation
+%     gmm_inflate_pgo=YanFuncLib_Overbound_tmp.inflate_PGO_gmm(params_pgo,alpha_adjust,gmm_dist,Xdata);
+%     [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_inflate_pgo,alpha_adjust);
+%     % gmm emp
+%     cdf_gmm_inflate_pgo=cdf(gmm_inflate_pgo,x_lin')';
+% 
+% %     % check and inflation
+% %     gmm_tmp=gmm_dist;
+% %     check_complete = false;
+% %     while ~check_complete
+% %         check_complete = true;
+% %         predict_cdf = YanFuncLib_Overbound_tmp.two_piece_cdf(x_lin_ecdf',...
+% %                             gmm_tmp,params_pgo.xL2p,params_pgo.xR2p);
+% %         % core check
+% %         left_punish_idx = x_lin_ecdf'> params_pgo.xL2p & x_lin_ecdf'<0 & predict_cdf<ecdf_data';
+% %         right_punish_idx = x_lin_ecdf'< params_pgo.xR2p & x_lin_ecdf'>0 & predict_cdf>ecdf_data';
+% %         avoid_cases_core = sum(left_punish_idx)+sum(right_punish_idx)
+% %         if avoid_cases_core > 0.05*sum(x_lin_ecdf'> params_pgo.xL2p & x_lin_ecdf'< params_pgo.xR2p) % 5% overbound
+% %             gmm_tmp=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_tmp,(1+0.01)^2,1); % 5% inflation on delta_1
+% %             gmm_tmp=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_tmp,1,(1+0.01)^2); % 5% inflation on delta_2
+% %             min_avoid_cases = 1e10;
+% %             for alpha = 0.05:0.05:1-0.05  
+% %                 [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_tmp,alpha);
+% %                 predict_cdf = YanFuncLib_Overbound_tmp.two_piece_cdf(x_lin_ecdf',...
+% %                                     gmm_tmp,params_pgo.xL2p,params_pgo.xR2p);
+% %                 left_punish_idx = x_lin_ecdf'> params_pgo.xL2p & x_lin_ecdf'<0 & predict_cdf<ecdf_data';
+% %                 right_punish_idx = x_lin_ecdf'< params_pgo.xR2p & x_lin_ecdf'>0 & predict_cdf>ecdf_data';
+% %                 avoid_cases = sum(left_punish_idx)+sum(right_punish_idx)
+% %                 if avoid_cases<min_avoid_cases
+% %                     min_avoid_cases = avoid_cases;
+% %                     alpha_adjust = alpha;
+% %                 end
+% %             end
+% %             [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_tmp,alpha_adjust);
+% %             predict_cdf = YanFuncLib_Overbound_tmp.two_piece_cdf(x_lin_ecdf',...
+% %                                     gmm_tmp,params_pgo.xL2p,params_pgo.xR2p);
+% %             check_complete = false;
+% %         end
+% %         
+% %         % tail check
+% %         left_punish_idx = x_lin_ecdf'<params_pgo.xL2p & predict_cdf<ecdf_data';
+% %         right_punish_idx = x_lin_ecdf'> params_pgo.xR2p& predict_cdf>ecdf_data';
+% %         avoid_cases_tail = sum(left_punish_idx)+sum(right_punish_idx)
+% %         if avoid_cases_tail>0
+% %             gmm_tmp=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_tmp,(1+0.01)^2,1); % 5% inflation on delta_1
+% %             gmm_tmp=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_tmp,1,(1+0.01)^2); % 5% inflation on delta_2
+% %             min_avoid_cases = 1e10;
+% %             for alpha = 0.05:0.05:1-0.05   
+% %                 [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_tmp,alpha);
+% %                 predict_cdf = YanFuncLib_Overbound_tmp.two_piece_cdf(x_lin_ecdf',...
+% %                                     gmm_tmp,params_pgo.xL2p,params_pgo.xR2p);
+% %                 left_punish_idx = x_lin_ecdf'<params_pgo.xL2p & predict_cdf<ecdf_data';
+% %                 right_punish_idx = x_lin_ecdf'> params_pgo.xR2p& predict_cdf>ecdf_data';
+% %                 avoid_cases = sum(left_punish_idx)+sum(right_punish_idx)
+% %                 if avoid_cases<min_avoid_cases
+% %                     min_avoid_cases = avoid_cases;
+% %                     alpha_adjust = alpha;
+% %                 end
+% %             end
+% %             [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_tmp,alpha_adjust);
+% %             predict_cdf = YanFuncLib_Overbound_tmp.two_piece_cdf(x_lin_ecdf',...
+% %                                     gmm_tmp,params_pgo.xL2p,params_pgo.xR2p);
+% %             check_complete = false;
+% %         end
+% %     end
+%     
+%     % check and inflation (GMM version)
+%     gmm_inflate_pure=gmm_dist;
+%     check_complete = false;
+%     while ~check_complete
+%         check_complete = true;
+%         predict_cdf = cdf(gmm_inflate_pure,x_lin_ecdf)';
+%         left_punish_idx = x_lin_ecdf'<params_pgo.xL2p & predict_cdf<ecdf_data';
+%         right_punish_idx = x_lin_ecdf'> params_pgo.xR2p& predict_cdf>ecdf_data';
+%         avoid_cases_tail = sum(left_punish_idx)+sum(right_punish_idx)
+%         left_punish_idx = x_lin_ecdf'> params_pgo.xL2p & x_lin_ecdf'<0 & predict_cdf<ecdf_data';
+%         right_punish_idx = x_lin_ecdf'< params_pgo.xR2p & x_lin_ecdf'>0 & predict_cdf>ecdf_data';
+%         avoid_cases_core = sum(left_punish_idx)+sum(right_punish_idx)
+%         
+%         if avoid_cases_tail > 0
+%             gmm_inflate_pure=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_inflate_pure,(1+0.01)^2,1); % 5% inflation on delta_1
+%             gmm_inflate_pure=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_inflate_pure,1,(1+0.01)^2); % 5% inflation on delta_2
+%             check_complete = false;
+%         end
+%         
+%         if avoid_cases_core > 0.05*sum(x_lin_ecdf'> params_pgo.xL2p & x_lin_ecdf'< params_pgo.xR2p) % 5% overbound
+%             gmm_inflate_pure=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_inflate_pure,(1+0.01)^2,1); % 5% inflation on delta_1
+%             gmm_inflate_pure=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_inflate_pure,1,(1+0.01)^2); % 5% inflation on delta_2
+%             check_complete = false;
+%         end
+%     end
+%     % gmm emp
+%     cdf_gmm_inflate_pure=cdf(gmm_inflate_pure,x_lin')';
+%     
+%     % Plot Results 
+%     subplot(4,3,item)
+%     % ecdf plot
+%     h1=semilogy(x_lin_ecdf,ecdf_data,'k+','LineWidth',1.5,'MarkerSize', 2);
+%     hold on
+%     % GMM plot
+%     h4=semilogy(x_lin,cdf_emp,'m-','LineWidth',1);
+%     % PGO plot
+%     h5=semilogy(x_lin,cdf_pgo,'bd-','LineWidth',0.5,'MarkerSize', 2,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
+%     % GMM inflate plote
+% %     h6 = semilogy(x_lin,cdf_gmm_inflate_pure,'r-','LineWidth',1);
+%     h7 = semilogy(x_lin,cdf_gmm_inflate_pgo,'m:','LineWidth',1);
+%     yline(0.5);
+%     xlim([min(x_lin)*1.2,max(x_lin)*0.5]);
+%     ylim([1e-6,1]);
+%     xlabel('Error (m)');
+%     ylabel('CDF (log scale)');
+%     grid on
+%     title(['ele: ',num2str(ele),'   alpha: ',num2str(params_pgo.alpha)]);
+%     item=item+1;
+%     
+%     % Plot Results 
+%     subplot(4,3,item)
+%     % ecdf plot
+%     h1=semilogy(x_lin_ecdf,1-ecdf_data,'k+','LineWidth',1.5,'MarkerSize', 2);
+%     hold on
+%     % GMM plot
+%     h4=semilogy(x_lin,1-cdf_emp,'m-','LineWidth',1);
+%     % PGO plot
+%     h5=semilogy(x_lin,1-cdf_pgo,'bd-','LineWidth',0.5,'MarkerSize', 2,'MarkerIndices',1:floor(length(x_lin)/100):length(x_lin));
+%     % GMM inflate plote
+% %     h6 = semilogy(x_lin,1-cdf_gmm_inflate_pure,'r-','LineWidth',1);
+%     h7 = semilogy(x_lin,1-cdf_gmm_inflate_pgo,'m:','LineWidth',1);
+%     yline(0.5);
+% %     xlim([min(x_lin)*1.2,max(x_lin)*0.5]);
+%     ylim([1e-6,1]);
+%     xlabel('Error (m)');
+%     ylabel('CCDF (log scale)');
+%     grid on
+%     title(['ele: ',num2str(ele),'   alpha: ',num2str(params_pgo.alpha)]);
+%     item=item+1;
+%     
+%     % Plot Results 
+%     subplot(4,3,item)
+%     boxplot(Xdata);
+%     title(['kurtosis: ',num2str(kurtosis(Xdata))]);
+%     item=item+1;
+%     if item==13
+%         break
+%     end
+% end
+
+%% 20240327 a reasonable way to partition core and tail region
+% p1=0.9;
+% p2=1-p1;
+% mu1=0;
+% mu2=0;
+% % sigma1=2.6917^2; % 0.5 
+% % sigma2=15.4972^2; % 1
+% sigma1=0.5^2; % 0.5 
+% sigma2=(0.5*2.5)^2; % 1
+% gm = gmdistribution([mu1; mu2], cat(3, sigma1, sigma2), [p1 p2]);
+% Nsamples=10000;
+% Xdata=random(gm, Nsamples);
+% lim=4;
+% x_lin = linspace(-lim, lim, Nsamples);
+% alpha = YanFuncLib_Overbound_tmp.find_alpha(Xdata,gm);
+% alpha = min(0.5,alpha);
+% % alpha=0.3;
+% [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gm,alpha);
+% [mean_tsgo, std_tsgo, ~, ~]=YanFuncLib_Overbound_tmp.two_step_bound_zero(Xdata,x_lin);
+% 
+% % intersection of s1 and s2
+% x_its_left = -sqrt( (2*sigma1*sigma2/(sigma2-sigma1)) ...
+%                 *log(p1*sqrt(sigma2)/(p2*sqrt(sigma1))) );
+% x_its_right = -x_its_left;         
+%             
+% % member weight
+% figure;
+% subplot(1,2,1)
+% yyaxis left
+% h1=plot(x_lin,pdf(gm,x_lin'),'k','LineWidth',2);
+% ylabel('PDF');
+% yyaxis right
+% h2=plot(x_lin,params_pgo.s1_list,'r','LineWidth',2);
+% hold on
+% h3=plot(x_lin,params_pgo.s2_list,'b','LineWidth',2);
+% scatter(x_its_left,0.5,72,'bo','filled');
+% scatter(x_its_right,0.5,72,'ro','filled');
+% h4=xline(params_pgo.xL2p,'k--','LineWidth',1.5);
+% h5=xline(params_pgo.xR2p,'r--','LineWidth',1.5);
+% h6=fill([params_pgo.xL2p params_pgo.xL2p  params_pgo.xR2p params_pgo.xR2p],[0 1.5 1.5 0],'k','FaceAlpha',0.1);
+% ylim([0,1.5]);
+% ylabel('Membership Weight');
+% xlabel('Error (m)');
+% ax = gca;
+% ax.YAxis(1).Color = 'black';
+% ax.YAxis(2).Color = 'black';
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h2,h3,h4,h5,h6],'BGMM','s1(x)','s2(x)','xlp','xrp','Core region');
+% set(A,'FontSize',13.5)
+% grid on
+% 
+% subplot(1,2,2)
+% % total_Sigma = p1*sigma1+p2*sigma2;
+% total_Sigma = sigma1;
+% tnorm = makedist('Normal','mu',0,'sigma',sqrt(total_Sigma));
+% tnorm_st = makedist('Normal','mu',0,'sigma',1);
+% Xdata_tnorm=random(tnorm, Nsamples,1);
+% Xdata_tnorm_st = random(tnorm_st, Nsamples,1);
+% 
+% kur_arr = [];
+% kur_tnorm_arr = [];
+% kur_tnorm_st_arr=[];
+% alpha_arr = [];
+% x_div_arr = [];
+% for x_div = x_lin(x_lin<0)
+%     Xdata_use = Xdata(Xdata>x_div & Xdata<-x_div);
+%     truncated_rate = 1-length(Xdata_use)/length(Xdata);
+%     if length(Xdata_use)<1000
+%         break
+%     end
+%     
+%     kur_arr(end+1)=kurtosis(Xdata_use);
+%     
+%     Xdata_tnorm_use = Xdata_tnorm(Xdata_tnorm>x_div & Xdata_tnorm<-x_div);
+%     kur_tnorm_arr(end+1)=kurtosis(Xdata_tnorm_use);
+%     
+%     x_st_div = norminv(truncated_rate/2);
+%     Xdata_tnorm_st_use = Xdata_tnorm_st(Xdata_tnorm_st>x_st_div & Xdata_tnorm_st<-x_st_div);
+%     kur_tnorm_st_arr(end+1)=kurtosis(Xdata_tnorm_st_use);
+%     
+%     [~,s2]=YanFuncLib_Overbound_tmp.cal_omega(x_div,mu1,sigma1,p1,mu2,sigma2,p2);
+%     alpha_arr(end+1) = s2;
+%     
+%     x_div_arr(end+1) = x_div;
+%     
+%     if abs(x_its_left-x_div) < abs(x_lin(2)-x_lin(1))
+%         % relative kutorsis error at intersection point
+%         ist_kur_re = (kur_arr(end)-kur_tnorm_st_arr(end))/kur_tnorm_st_arr(end);
+%     end
+% end
+% 
+% h1=plot(x_div_arr,100*(kur_arr-kur_tnorm_st_arr)./kur_tnorm_st_arr,'m','LineWidth',1.5);
+% hold on
+% % yline(0.05*100,'k:');
+% % yline(-0.05*100,'k:');
+% % h2=plot(x_div_arr,alpha_arr,'b');
+% h3=fill([min(x_div_arr),min(x_div_arr),max(x_div_arr),max(x_div_arr)],[-0.05,0.05,0.05,-0.05]*100,'k','FaceAlpha',0.1);
+% % xline(x_its_left,'k--','LineWidth',1.5);
+% h4 = scatter(x_its_left,ist_kur_re*100,72,'bo','filled');
+% xlim([min(x_div_arr),max(x_div_arr)])
+% ylim([-0.2,1.2]*100)
+% ylabel('Percent (%)');
+% xlabel('Error (m)');
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h3,h4],'Relative kurtosis error','\pm 5% error','Left intersection');
+% set(A,'FontSize',13.5)
+% grid on
+% 
+% % pdf
+% figure;
+% h1=plot(x_lin,pdf(gm,x_lin'),'k','LineWidth',2);
+% hold on
+% % PGO
+% h2=plot(x_lin,pdf_pgo,'b','LineWidth',2);
+% % Two step Gaussian
+% h3=plot(x_lin,normpdf(x_lin,mean_tsgo,std_tsgo),'g','LineWidth',2);
+% h4=xline(params_pgo.xL2p,'k--','LineWidth',1);
+% h5=xline(params_pgo.xR2p,'r--','LineWidth',1);   
+% xlabel('Error');
+% ylabel('PDF');
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h2,h3,h4,h5],'BGMM','Principal Gaussian','Gaussian','xlp','xrp');
+% set(A,'FontSize',13.5)
+% grid on
+% 
+% 
+% % cdf
+% figure;
+% h1=plot(x_lin,cdf(gm,x_lin'),'k','LineWidth',2);
+% hold on
+% % PGO
+% h2=plot(x_lin,cdf_pgo,'b','LineWidth',2);
+% % Two step Gaussian
+% h3=plot(x_lin,normcdf(x_lin,mean_tsgo,std_tsgo),'g','LineWidth',2);
+% h4=xline(params_pgo.xL2p,'k--','LineWidth',1);
+% h5=xline(params_pgo.xR2p,'r--','LineWidth',1);   
+% xlabel('Error');
+% ylabel('CDF');
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h2,h3,h4,h5],'BGMM','Principal Gaussian','Gaussian','xlp','xrp');
+% set(A,'FontSize',13.5)
+% grid on
+
+%% 20240403 visualize hist of Urban DGNSS error in each bin
+% load('Data/urban_dd_0816/mergeurbandd.mat');
+% filter_SNR=(mergedurbandd.U2I_SNR>=40); 
+% item=1
+% for ele = [30,35,40,45,55,60]
+%     filter_ele=(mergedurbandd.U2I_Elevation>=ele & mergedurbandd.U2I_Elevation<=ele+5); 
+%     Xdata=mergedurbandd.doubledifferenced_pseudorange_error(filter_ele & filter_SNR);
+%     subplot(2,3,item)
+%     histogram(Xdata,'normalization','pdf')
+%     xlim([-27,27])
+%     ylim([-0.01,0.5])
+%     str1 = ['Elev.: ',num2str(ele),'\circ \sim ',num2str(ele+5),'\circ'];
+%     str2 = ['Min: ',num2str(min(Xdata)),' ,Max:',num2str(max(Xdata))];
+%     title(str2);
+%     item=item+1;
+% end
+
+%% 20240406 discretization method
+% N = 50-1;  % total number of intervals
+% half_N = N/2;
+% tranc = N/10; % should adjust to achive unimodal
+% x_lim = 10;
+% leftEdge_list=calLeftEdges(N,x_lim,tranc,'equal');
+% % cdf at each left edge
+% cdf_leftEdge_list = normcdf(leftEdge_list);
+% % overbound cdf
+% obcdf_leftEdge_list=[];
+% for i=1:N-1
+%     if i<half_N
+%         obcdf_leftEdge = normcdf(leftEdge_list(i+1));
+%     else
+%         obcdf_leftEdge = normcdf(leftEdge_list(i));
+%     end
+%     obcdf_leftEdge_list(end+1)=obcdf_leftEdge;
+% end
+% % transfer ob_cdf to pmf
+% pmf_leftEdge_list = [cdf_leftEdge_list(1),cdf_leftEdge_list(2:end)-cdf_leftEdge_list(1:end-1)];
+% 
+% figure
+% stem(leftEdge_list,[1:half_N,flip(1:half_N-1)]);
+% 
+% figure
+% plot(-x_lim:0.1:x_lim,normcdf(-x_lim:0.1:x_lim));
+% hold on 
+% for i=1:length(leftEdge_list)-1
+%     left_edge = leftEdge_list(i);
+%     right_edge = leftEdge_list(i+1);
+%     cdf_value = obcdf_leftEdge_list(i);
+%     line([left_edge, right_edge], [cdf_value,cdf_value], 'Color', 'r', 'LineWidth', 0.5);
+% end
+% 
+% figure
+% plot(-x_lim:0.1:x_lim,normpdf(-x_lim:0.1:x_lim));
+% figure
+% stem(leftEdge_list,pmf_leftEdge_list)
+% 
+% x_lim = 5;
+% delta_x = 0.1;
+% [leftEdge_list,obcdf_leftEdge_list,pmf_leftEdge_list]=cal_ob_pmf(x_lim,delta_x,@normcdf);
+% 
+% figure
+% subplot(2,2,1)
+% plot(-x_lim:0.1:x_lim,normcdf(-x_lim:0.1:x_lim));
+% hold on 
+% for i=1:length(leftEdge_list)-1
+%     left_edge = leftEdge_list(i);
+%     right_edge = leftEdge_list(i+1);
+%     cdf_value = obcdf_leftEdge_list(i);
+%     line([left_edge, right_edge], [cdf_value,cdf_value], 'Color', 'r', 'LineWidth', 0.5);
+% end
+% 
+% subplot(2,2,2)
+% plot(-x_lim:0.1:x_lim,normpdf(-x_lim:0.1:x_lim));
+% subplot(2,2,3)
+% stem(leftEdge_list,pmf_leftEdge_list)
+
+%% 20240407 MFloats of FFT on my latpot
+% N=256;
+% arr=complex(zeros(1,N),zeros(1,N));
+% tic;
+% cnts=1000000;
+% for i=1:cnts
+% fft_pdf1=fft(arr,N);
+% end
+% use_time = toc;
+% disp(use_time);
+% mflops = 5*N*log2(N)/(use_time/cnts * 10^6);
+% disp(mflops)
+
+%% 20240409 EM & discrepency fitting comparison
+% % Through this experiment, we finally decide to use EM algorihtm for
+% % fitting. Due to the sigma inflation strategy, we do not have harsh
+% % reguirements in the fitting performance.
+% seed=1234;
+% ele = 30;
+% % gene GMM Data
+% gm = gmdistribution([0; 0], cat(3, 1, 36), [0.7 0.3]);
+% Xdata = random(gm, 500);
+% % [Xdata,~,~]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% 
+% % ecdf
+% [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+% % GMM fit - discrepency
+% [sol,gmm_dist_op] = YanFuncLib_Overbound_tmp.opfit_GMM_zeroMean(Xdata);
+% cdf_gmm_op=cdf(gmm_dist_op,x_lin_ecdf)';
+% % GMM fit - EM
+% [gmm_dist_em]=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
+% cdf_gmm_em=cdf(gmm_dist_em,x_lin_ecdf)';
+% 
+% figure
+% % ecdf plot
+% h1=semilogy(x_lin_ecdf,ecdf_data,'kx-','LineWidth',1,'MarkerSize', 6);
+% hold on
+% % gmm_op plot
+% h2=semilogy(x_lin_ecdf,cdf_gmm_op,'r','LineWidth',1);
+% % gmm_em plot
+% h3=semilogy(x_lin_ecdf,cdf_gmm_em,'bs-','LineWidth',1,'MarkerFaceColor','b','MarkerSize', 4,'MarkerIndices',1:floor(length(x_lin_ecdf)/26):length(x_lin_ecdf));
+% 
+% 
+% xlabel('Error (m)');
+% ylabel('CDF (log scale)');
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
+% A = legend([h1,h2,h3],'Sample dist.','Discrepency-based fitting','EM-based fitting');
+% set(A,'FontSize',13.5)
+% legend
+% grid on
+
+%% 20240411 compare Gaussian, paired overbound, core overbound, Two-step Gaussian
+% figure
+% Xdata = randn(10000,1);
+% subplot(2,2,1)
+% [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
+% plot(x_lin_ecdf,ecdf_data,'*')
+% xlim([-4,4])
+% hold on
+% x_lin=-5:0.01:5;
+% plot(x_lin,normcdf(x_lin,0,2),'r','LineWidth',2)
+% title('Gaussian CDF overbound')
+% xlabel('Error')
+% ylabel('PDF')
+% 
+% subplot(2,2,2)
+% plot(x_lin_ecdf,ecdf_data,'*')
+% xlim([-4,4])
+% hold on
+% x_lin=-5:0.01:5;
+% plot(x_lin,normcdf(x_lin,-2,1),'r','LineWidth',2)
+% plot(x_lin,normcdf(x_lin,2,1),'r','LineWidth',2)
+% title('Paired Gaussian overbound')
+% xlabel('Error')
+% ylabel('PDF')
+% 
+% subplot(2,2,3)
+% plot(x_lin_ecdf,ecdf_data,'*')
+% xlim([-4,4])
+% hold on
+% x_lin=-2.5:0.01:2.5;
+% plot(x_lin,normcdf(x_lin,0,1.5),'r','LineWidth',2)
+% left_x_lin=-5:0.01:-2.5;
+% plot(left_x_lin,normcdf(-2.5,0,1.5)*ones(size(left_x_lin)),'r','LineWidth',2)
+% right_x_lin=2.5:0.01:5;
+% plot(right_x_lin,normcdf(2.5,0,1.5)*ones(size(right_x_lin)),'r','LineWidth',2)
+% title('Gaussian core overbound')
+% xlabel('Error')
+% ylabel('PDF')
+% 
+% subplot(2,2,4)
+% plot(x_lin_ecdf,ecdf_data,'*')
+% xlim([-4,4])
+% hold on
+% left_x_lin=-5:0.01:0;
+% plot(left_x_lin,normcdf(left_x_lin,-2,1),'r','LineWidth',2)
+% right_x_lin=0:0.01:5;
+% plot(right_x_lin,normcdf(right_x_lin,2,1),'r','LineWidth',2)
+% title('Two-step Gaussian overbound')
+% xlabel('Error')
+% ylabel('PDF')
+
+function [leftEdge_list,obcdf_leftEdge_list,pmf_leftEdge_list]=cal_ob_pmf(x_lim,delta_x,cdf_func)
+    leftEdge_list = -x_lim:delta_x:x_lim;
+    N=length(leftEdge_list)+1; % total number of intervals
+    half_N = N/2;
+    % cdf at each left edge
+    cdf_leftEdge_list = cdf_func(leftEdge_list);
+    % overbound cdf
+    obcdf_leftEdge_list=[];
+    for i=1:N-1
+        if i<half_N
+            obcdf_leftEdge = cdf_func(leftEdge_list(i+1));
+        elseif i<N-2
+            obcdf_leftEdge = cdf_func(leftEdge_list(i));
+        else
+            obcdf_leftEdge = cdf_leftEdge_list(i);
+        end
+        obcdf_leftEdge_list(end+1)=obcdf_leftEdge;
+    end
+    % transfer ob_cdf to pmf
+    pmf_leftEdge_list = [obcdf_leftEdge_list(1)-cdf_leftEdge_list(1),obcdf_leftEdge_list(2:end)-obcdf_leftEdge_list(1:end-1)];
+%     pmf_leftEdge_list = [cdf_leftEdge_list(1),cdf_leftEdge_list(2:end)-cdf_leftEdge_list(1:end-1)];
+end
+
+function leftEdge_list=calLeftEdges(N,x_lim,tranc,method)
+    if method == "unequal"
+        leftEdge_list=[];
+        half_N = N/2;
+        C=abs(x_lim/log(1/half_N));
+        core_interval=-2*C * log((half_N-tranc)/half_N);
+        last_bound=0;
+        for k = 1:2*half_N-1
+            if k<=half_N-tranc
+                Bound = C * log(k/half_N);
+            elseif k<=half_N+tranc
+                Bound = last_bound+core_interval/(2*tranc);
+            else
+                Bound =  -C * log((2*half_N-k)/half_N);
+            end
+            leftEdge_list(end+1)=Bound;
+            last_bound = Bound;
+        end
+    else
+        ex_half_N = (N+1)/2;
+        left_side = linspace(-x_lim, 0,ex_half_N);
+        right_side = linspace(0,x_lim,ex_half_N);
+        leftEdge_list = [left_side(1:end-1),right_side(2:end)];
+    end
+end
+
 
 function y=GaussPareto_cdf(data)
     y=zeros(size(data));
