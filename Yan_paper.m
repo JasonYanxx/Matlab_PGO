@@ -79,14 +79,22 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 figure
 seed=1234;
 use_subplots=false;
-ele = 15;
+ele = 30;
 void_ratio = 1/100;% 0.1% for urban; 1% for ref
+
+
 % load Data
-[Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD('',ele,5,'2020-01-01','2020-01-30','yihan_correction');
-% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD('Data/mnav_zmp1_jan_20240409/mergedRefJan.mat',ele,5,'yihan_correction');
-% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD(...
+%     {'Data/mnav_zmp1_halfyear_20240410/mergedRefhalfyear.mat','Data/mnav_zmp1_halfyear_2nd_20240410/mergedRefhalfyear2nd.mat'},...
+%     ele,5,'2020-01-01 00:00:00','2020-01-31 23:59:59',10,'mirror data','substract median');
+[Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD({'Data/mnav_zmp1_jan_20240409/mergedRefJan.mat'},...
+    ele,5,'2020-01-01','2020-01-31 23:59:59',10,'mirror data','substract median');
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+%                         30,5,inf,40,'substract median'); % TAES draft (data has human error)
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/TST_Jun28_onehour/mergedTSTJun28onehour.mat'},...
+%                         ele,5,inf,35,'substract median','TAES_2nd_complementary');
 % str_title =['1 year of DGNSS Errors (Elev.: ',num2str(ele),'\circ \sim ',num2str(ele+5),'\circ)'];
-% str_title =['Urban DGNSS Errors (Elev.: ',num2str(ele),'\circ \sim ',num2str(ele+5),'\circ)'];
+str_title =['Urban DGNSS Errors (Elev.: ',num2str(ele),'\circ \sim ',num2str(ele+5),'\circ)'];
 
 % ecdf
 [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
@@ -113,7 +121,7 @@ cdf_emp=cdf(gmm_dist,x_lin')';
 % alpha_adjust = min([0.5,alpha_adjust1,alpha_adjust2]);
 alpha_adjust=YanFuncLib_Overbound_tmp.find_alpha(Xgmm_data,gmm_dist);
 alpha_adjust = min(0.5,alpha_adjust);
-[params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,alpha_adjust);
+[params_pgo, pdf_pgo, cdf_pgo_pre]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_dist,alpha_adjust);
 % check and inflation
 gmm_inflate_pgo=YanFuncLib_Overbound_tmp.inflate_PGO_gmm(params_pgo,alpha_adjust,gmm_dist,Xdata,void_ratio);
 [params_pgo, pdf_pgo, cdf_pgo]=YanFuncLib_Overbound_tmp.Principal_Gaussian_bound(Xdata,x_lin,gmm_inflate_pgo,alpha_adjust);
@@ -224,7 +232,8 @@ set(A,'FontSize',13.5)
 grid on
 
 %% Paper-Urban DGNSS error against SNR and Ele: Fig.8
-% load('Data/Urban_dd_0816/mergeurbandd.mat');
+% load('Data/urban_dd_0816/mergeurbandd.mat'); % TAES draft (data is wrong)
+% % load('Data/urban_dd_20240104/mergeurbandd.mat'); % data is corrected
 % % load('Data/mnav_zmp1_jan/mergedRefJan.mat');
 % figure;
 % % set color map
@@ -235,15 +244,18 @@ grid on
 % % plot 2D scatter; use z-axis as color
 % scatter(mergedurbandd.U2I_Elevation, mergedurbandd.U2I_SNR, 30, c, 'filled');
 % colormap(cmap);
+% caxis([-1, 6]);
 % colorbar;
-% xlabel('Ele');
-% ylabel('SNR');
+% xlabel('Elevation angle (degree)');
+% ylabel('Signal to noise ratio (dB)');
+% title('Urban DGNSS Errors')
+% set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 
-
-%% VPL and VPE series, PL compuation time: Fig. 7a,b
+%% VPL and VPE series, PL compuation time: Fig. 7a,b £¨TAES draft£©
 % seed=1234;
 % % load GMM
-% [Xdata,x_lin_org,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+%                         30,5,inf,40,'substract median'); % data has human error
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin_org);
 % % Principal Gaussian overbound (zero-mean)
@@ -265,11 +277,11 @@ grid on
 % 
 % % set transformation matrix: ecef to enu
 % % the tool: https://www.lddgo.net/convert/coordinate-transform
-% p_ecef=[-2418235.676841056 , 5386096.899553243 , 2404950.408609563];
+% p_ecef=[-2418235.676841056 , 5386096.899553243 , 2404950.408609563]; % receiver location (ECEF) solved by RTKlib 
 % p_lbh=[114.1790017,22.29773881,3];
 % p.L=p_lbh(1);p.B=p_lbh(2);p.H=p_lbh(3);
 % p.Xp=p_ecef(1);p.Yp=p_ecef(2);p.Zp=p_ecef(3);
-% M=YanFuncLib_Overbound_tmp.matrix_ecef2enu(p);
+% M=YanFuncLib_Unity_tmp.matrix_ecef2enu(p);
 % 
 % % PL 
 % min_s=10000;
@@ -396,10 +408,11 @@ grid on
 % xlabel('Number of measurements');
 % set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 
-%% VPL and VPE series, PL compuation time: Fig. 10a,b (20240406)
+%% VPL and VPE series, PL compuation time: Fig. 10a,b (20240406 TAES first revision)
 % seed=1234;
 % % load GMM
-% [Xdata,x_lin_org,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+%                         30,5,inf,40,'substract median'); % data has human error
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % % counts=length(x_lin_org);
 % 
@@ -435,11 +448,11 @@ grid on
 % 
 % % set transformation matrix: ecef to enu
 % % the tool: https://www.lddgo.net/convert/coordinate-transform
-% p_ecef=[-2418235.676841056 , 5386096.899553243 , 2404950.408609563];
+% p_ecef=[-2418235.676841056 , 5386096.899553243 , 2404950.408609563]; % receiver location (ECEF) solved by RTKlib 
 % p_lbh=[114.1790017,22.29773881,3];
 % p.L=p_lbh(1);p.B=p_lbh(2);p.H=p_lbh(3);
 % p.Xp=p_ecef(1);p.Yp=p_ecef(2);p.Zp=p_ecef(3);
-% M=YanFuncLib_Overbound_tmp.matrix_ecef2enu(p);
+% M=YanFuncLib_Unity_tmp.matrix_ecef2enu(p);
 % 
 % % PL 
 % min_s=10000;
@@ -551,7 +564,7 @@ grid on
 % A = legend([h1,h2,h3],'Error','Gaussian','Principal Gaussian');
 % set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
 % set(A,'FontSize',13.5)
-% 
+% % 
 % % summarize computation time
 % format long
 % A = cal_time_list; % array to be cluster
@@ -566,7 +579,7 @@ grid on
 % ylabel('Computation time (s)');
 % xlabel('Number of measurements');
 % set(gca, 'FontSize', 15,'FontName', 'Times New Roman');
-% 
+
 % % show statistics
 % PL_dff = abs((abs(PL_pgo_list)-abs(PL_gaussian_list))./abs(PL_gaussian_list));
 % min(PL_dff)
@@ -575,12 +588,12 @@ grid on
 % median(PL_dff)
 
 %% Paper-Stanford chart: Fig. 10c,d
-% load('Urban_PL_revision_20240409.mat')
-% VPE = err_list;VPL_Gaussian=PL_gaussian_list;VPL_pgo=PL_pgo_list;
+% % load('Urban_PL_revision_20240409.mat')
+% VPE = error_list;VPL_Gaussian=PL_gaussian_list;VPL_pgo=PL_pgo_list;
 % 
 % E=abs(VPE');
-% % PL=abs(VPL_Gaussian');
-% PL=abs(VPL_pgo');
+% PL=abs(VPL_Gaussian');
+% % PL=abs(VPL_pgo');
 % % Figure position
 % L = 800;
 % H = 700;
@@ -599,8 +612,8 @@ grid on
 % Strings = {'NO #1','NO #2'};
 % 
 % StanfordDiagram('Axes',            Axes,...
-%                 'Step',            3,...
-%                 'Maximum',         300,...
+%                 'Step',            2,...
+%                 'Maximum',         150,...
 %                 'AlertLimit',      AlertLimit,...
 %                 'CategoryLimit',   CategoryLimit,...
 %                 'Scale',           'linear',...
@@ -631,10 +644,11 @@ grid on
 % xlim([-3.2,3.2])
 % grid on
 
-%% Paper-alpha effects: Fig. 8
+%% Paper-alpha effects: Fig. 8 (TAES draft)
 % seed=1234;
 % % load Data
-% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD({'Data/mnav_zmp1_jan/mergedRefJan.mat'},...
+%     30,5,'2020-01-01','2020-01-31 23:59:59',10,'substract median'); % data has human error
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin);
 % 
@@ -676,13 +690,16 @@ grid on
 % set(A,'FontSize',13.5)
 % grid on
 
-%% Paper-alpha effects: Fig. 11 (20240408)
+%% Paper-alpha effects: Fig. 11 (20240408 TAES first revision)
 % seed=1234;
 % ele=30;
 % void_ratio = 1/100;% 0.1% for urban; 1% for ref
 % % load Data
-% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD('',ele,5,'2020-01-01','2020-02-01','yihan_correction');
-% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD(...
+%     {'Data/mnav_zmp1_halfyear_20240410/mergedRefhalfyear.mat','Data/mnav_zmp1_halfyear_2nd_20240410/mergedRefhalfyear2nd.mat'},...
+%     ele,5,'2020-01-01 00:00:00','2020-01-31 23:59:59',10,'mirror data','substract median');
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+% %                         30,5,inf,40,'substract median'); % data has human error
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin);
 % 
@@ -913,7 +930,8 @@ grid on
 % void_ratio = 1/100;% 0.1% for urban; 1% for ref
 % % load Data
 % [Xdata,x_lin,pdf_data,cdf_data]=YanFuncLib_Overbound_tmp.load_NIG();
-% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+% %                         30,5,inf,40,'substract median'); % data has human error
 % 
 % % ecdf
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);

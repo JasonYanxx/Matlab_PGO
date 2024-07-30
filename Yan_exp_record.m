@@ -5,7 +5,7 @@ addLibPathInit();
 YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 %% explore T1_trans method (20230701)
 % % analysis whether T1_trans can be modelled as an overbound
-% [Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFuncLib_Overbound_tmp.load_GMM(seed);
+[Xdata,x_lin,pdf_data,cdf_data,gmm_dist]=YanFuncLib_Overbound_tmp.load_GMM(seed);
 % YanFuncLib_Overbound_tmp.compare_twoside_bound(Xdata,x_lin,gmm_dist)
 
 %% explore Fault detection (20230702)
@@ -227,27 +227,26 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 % plot(x,y_pdf,'b','LineWidth',2);
 
 %% 2023072 GPS data (from yihan) processing
-% % set folder path and file name
-% folder = 'Data/mnav_zmp1_halfyear_2nd_20240410'; 
-% filePattern = fullfile(folder, '*.csv'); % using wildcard
-% csvFiles = dir(filePattern); % 
-% 
-% % read each csv
-% for i = 1:length(csvFiles)
-%     filename = fullfile(csvFiles(i).folder, csvFiles(i).name);
-%     data{i} = readtable(filename, 'HeaderLines', 1); % jump first line of header 
-% end
-% 
-% % merge
-% bigTable = vertcat(data{:});
-% % set folder path and file name
-% filename = 'merged_Ref_halfyear_2nd.csv'; % new filename
-% folder = 'Data/mnav_zmp1_halfyear_2nd_20240410'; % path for saving new file
-% fullPath = fullfile(folder, filename);
-% 
-% % save to csv
-% writetable(bigTable, fullPath, 'Delimiter', ',', 'QuoteStrings', true);
-% % add header manually
+% set folder path and file name
+folder = 'C:\Users\Administrator\Desktop\WorkSpace\MyRTKLBAPP\MyRTKLBAPP\rnx2rtkp\results_GRE'; 
+filePattern = fullfile(folder, '*.csv'); % using wildcard
+csvFiles = dir(filePattern); % 
+% read each csv
+for i = 1:length(csvFiles)
+    filename = fullfile(csvFiles(i).folder, csvFiles(i).name);
+    data{i} = readtable(filename, 'HeaderLines', 1); % jump first line of header 
+end
+
+% merge
+bigTable = vertcat(data{:});
+% set folder path and file name
+filename = 'mergeurbandd.csv'; % new filename
+folder = 'C:\Users\Administrator\Desktop\WorkSpace\MyRTKLBAPP\MyRTKLBAPP\rnx2rtkp\results_GRE'; % path for saving new file
+fullPath = fullfile(folder, filename);
+
+% save to csv
+writetable(bigTable, fullPath, 'Delimiter', ',', 'QuoteStrings', true);
+% add header manually
 % 
 % load('Data/mnav_zmp1_jan/mergedRefJan.mat');
 % % select: ele(25~50)
@@ -258,10 +257,13 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 % seed=1234;
 % % load GMM
 % % [Xemp,x_lin_emp,pdf_emp,cdf_emp,gmm_dist]=YanFuncLib_Overbound_tmp.load_GMM_bias(seed);
-% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD();
-% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD({'Data/mnav_zmp1_jan/mergedRefJan.mat'},...
+% %     30,5,'2020-01-01','2020-01-31 23:59:59',10,'substract median');% data has human error
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+%                         30,5,inf,40,'substract median');% data has human error
 % % Xdata=Xdata-median(Xdata); % should not do this
-% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% % [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+% %                         30,5,inf,40,'substract median');  % data has human error
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 % counts=length(x_lin);
 % Xmedian=median(Xdata);
@@ -883,21 +885,24 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 % grid on
 
 %% 20240403 visualize hist of Urban DGNSS error in each bin
-% load('Data/urban_dd_0816/mergeurbandd.mat');
-% filter_SNR=(mergedurbandd.U2I_SNR>=40); 
-% item=1
-% for ele = [30,35,40,45,55,60]
-%     filter_ele=(mergedurbandd.U2I_Elevation>=ele & mergedurbandd.U2I_Elevation<=ele+5); 
-%     Xdata=mergedurbandd.doubledifferenced_pseudorange_error(filter_ele & filter_SNR);
-%     subplot(2,3,item)
-%     histogram(Xdata,'normalization','pdf')
+load('Data/urban_dd_0816/mergeurbandd.mat');
+figure
+filter_SNR=(mergedurbandd.U2I_SNR>=40); 
+item=1;
+for ele = [30,35,40,45,50,55]
+    filter_ele=(mergedurbandd.U2I_Elevation>=ele & mergedurbandd.U2I_Elevation<=ele+5); 
+    Xdata=mergedurbandd.doubledifferenced_pseudorange_error(filter_ele & filter_SNR);
+    subplot(2,3,item)
+    histogram(Xdata,'normalization','pdf')
 %     xlim([-27,27])
 %     ylim([-0.01,0.5])
-%     str1 = ['Elev.: ',num2str(ele),'\circ \sim ',num2str(ele+5),'\circ'];
-%     str2 = ['Min: ',num2str(min(Xdata)),' ,Max:',num2str(max(Xdata))];
-%     title(str2);
-%     item=item+1;
-% end
+    str1 = ['Elev.: ',num2str(ele),'\circ \sim ',num2str(ele+5),'\circ'];
+    str2 = ['Min: ',num2str(min(Xdata)),' ,Max:',num2str(max(Xdata))];
+    str3 = ['Mean: ',num2str(mean(Xdata)),' ,Median:',num2str(median(Xdata)),' ,Amount:',num2str(length(Xdata))];
+    str4 = ['Mean: ',num2str(mean(Xdata)),' ,Amount:',num2str(length(Xdata))];
+    title({str1,str4});
+    item=item+1;
+end
 
 %% 20240406 discretization method
 % N = 50-1;  % total number of intervals
@@ -980,7 +985,8 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 % % gene GMM Data
 % gm = gmdistribution([0; 0], cat(3, 1, 36), [0.7 0.3]);
 % Xdata = random(gm, 500);
-% % [Xdata,~,~]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+%                         30,5,inf,40,'substract median'); % data has human error
 % 
 % % ecdf
 % [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
@@ -1059,6 +1065,23 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 % title('Two-step Gaussian overbound')
 % xlabel('Error')
 % ylabel('PDF')
+
+%% 20240705 explore 1-hour urban data distribution with time
+filter_SNR=(mergedurbandd.U2I_SNR>=40); 
+ele = 25
+filter_ele=(mergedurbandd.U2I_Elevation>=ele & mergedurbandd.U2I_Elevation<=ele+5);
+filter_datetime=(mergedurbandd.datetime>"2024-06-28 06:01:59");
+ufilter_datetime=(mergedurbandd.datetime>"2024-06-28 06:55:51" & mergedurbandd.datetime<"2024-06-28 06:56:47" );
+tmp=mergedurbandd(filter_datetime & ~ufilter_datetime & filter_ele & filter_SNR,:);
+% tmp=mergedurbandd(filter_datetime & filter_ele & filter_SNR,:);
+Xdata=tmp.doubledifferenced_pseudorange_error;
+sortedTable = sortrows(tmp, 'datetime');
+figure
+subplot(2,1,1);scatter(sortedTable.datetime,sortedTable.doubledifferenced_pseudorange_error,2,'*'); ylim([-5,5]); yline(0);
+title(num2str(ele));
+subplot(2,1,2);histogram(Xdata,'normalization','pdf'); xlim([-5,5]);
+str3 = ['Mean: ',num2str(mean(Xdata)),' ,Median:',num2str(median(Xdata)),' ,N:',num2str(length(Xdata))];
+title(str3);
 
 function [leftEdge_list,obcdf_leftEdge_list,pmf_leftEdge_list]=cal_ob_pmf(x_lim,delta_x,cdf_func)
     leftEdge_list = -x_lim:delta_x:x_lim;

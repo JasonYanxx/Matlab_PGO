@@ -6,10 +6,12 @@ seed=1234;
 
 %% load dataset
 % Urban DD
-[Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD();
+[Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_UrbanDD({'Data/urban_dd_0816/mergeurbandd.mat'},...
+                        30,5,inf,40,'substract median'); % data has human error
 % 
 % CORS
-% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD();
+% [Xdata,x_lin,pdf_data]=YanFuncLib_Overbound_tmp.load_RefDD({'Data/mnav_zmp1_jan/mergedRefJan.mat'},...
+%     30,5,'2020-01-01','2020-01-31 23:59:59',10,'substract median'); % data has human error
 [ecdf_data, x_lin_ecdf] = ecdf(Xdata);
 gmm_dist=YanFuncLib_Overbound_tmp.gene_GMM_EM_zeroMean(Xdata);
 gmm_dist=YanFuncLib_Overbound_tmp.inflate_GMM(gmm_dist,1,1.2);
