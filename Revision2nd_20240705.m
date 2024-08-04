@@ -305,7 +305,7 @@ YanFuncLib_Unity_tmp=YanFuncLib_Unity;
 %     if size(s_sv_pos,1)>=3
 %         % LS positioning
 %         meas_std = ones(size(meas));
-%         [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_std, m_sv_pos,s_sv_pos,ref_xyz);
+%         [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = YanFuncLib_Unity_tmp.WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_std, m_sv_pos,s_sv_pos,ref_xyz);
 %         % position error at ENU
 %         PE_enu = YanFuncLib_Unity_tmp.trans_pos_ecef2enu(eWLSSolution(1:3),M_ecef2enu) ...
 %                         -YanFuncLib_Unity_tmp.trans_pos_ecef2enu(GTusr_xyz',M_ecef2enu);
@@ -537,7 +537,7 @@ YanFuncLib_Unity_tmp=YanFuncLib_Unity;
 % 
 %         % LS positioning
 %         meas_std = ones(size(meas));
-%         [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_std, m_sv_pos,s_sv_pos,ref_xyz);
+%         [eWLSSolution,prn_res,ErrorECEF,G,eDeltaPos,eDeltaPr] = YanFuncLib_Unity_tmp.WeightedLeastSquareDD(GTusr_xyz, init_state, meas, meas_std, m_sv_pos,s_sv_pos,ref_xyz);
 %         % get scale list
 %         S = inv(G'*G)*G';
 %         S_enu = YanFuncLib_Unity_tmp.trans_solmat_ecef2enu(S,M_ecef2enu);

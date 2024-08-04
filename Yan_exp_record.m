@@ -228,7 +228,7 @@ YanFuncLib_Overbound_tmp=YanFuncLib_Overbound;
 
 %% 2023072 GPS data (from yihan) processing
 % set folder path and file name
-folder = 'C:\Users\Administrator\Desktop\WorkSpace\MyRTKLBAPP\MyRTKLBAPP\rnx2rtkp\results_GRE'; 
+folder = 'C:\Users\Administrator\Desktop\WorkSpace\MyRTKLBAPP\MyRTKLBAPP\rnx2rtkp\.vscode'; 
 filePattern = fullfile(folder, '*.csv'); % using wildcard
 csvFiles = dir(filePattern); % 
 % read each csv
@@ -241,7 +241,7 @@ end
 bigTable = vertcat(data{:});
 % set folder path and file name
 filename = 'mergeurbandd.csv'; % new filename
-folder = 'C:\Users\Administrator\Desktop\WorkSpace\MyRTKLBAPP\MyRTKLBAPP\rnx2rtkp\results_GRE'; % path for saving new file
+folder = 'C:\Users\Administrator\Desktop\WorkSpace\MyRTKLBAPP\MyRTKLBAPP\rnx2rtkp\.vscode'; % path for saving new file
 fullPath = fullfile(folder, filename);
 
 % save to csv
